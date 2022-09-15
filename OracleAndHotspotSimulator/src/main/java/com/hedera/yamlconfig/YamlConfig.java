@@ -16,7 +16,7 @@ public class YamlConfig {
     private int reportInterval = 100;
 
     private boolean hotspotsSimulator = false;
-    private boolean oracle = false;
+    private YamlOracle oracle = new YamlOracle();
 
     public boolean isHotspotsSimulator() {
         return hotspotsSimulator;
@@ -26,11 +26,11 @@ public class YamlConfig {
         this.hotspotsSimulator = hotspotsSimulator;
     }
 
-    public boolean isOracle() {
+    public YamlOracle getOracle() {
         return oracle;
     }
 
-    public void setOracle(boolean oracle) {
+    public void setOracle(YamlOracle oracle) {
         this.oracle = oracle;
     }
 

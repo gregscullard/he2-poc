@@ -109,7 +109,19 @@ public class YamlConfigManager {
     }
 
     public boolean isOracle() {
-        return this.yamlConfig.isOracle();
+        return this.yamlConfig.getOracle().isEnabled();
+    }
+
+    public int getOracleEpochSeconds() {
+        return this.yamlConfig.getOracle().getEpochSeconds();
+    }
+
+    public int getOracleMinEpochReports() {
+        return this.yamlConfig.getOracle().getMinEpochReports();
+    }
+
+    public int getOracleMinWitnessReports() {
+        return this.yamlConfig.getOracle().getMinWitnessReports();
     }
 
     public Map<Integer, AccountId> getHotspotIdAccountMap() {

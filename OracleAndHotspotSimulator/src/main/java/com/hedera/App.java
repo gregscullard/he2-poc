@@ -50,13 +50,8 @@ public class App {
         }
 
         if (yamlConfigManager.isOracle()) {
-            TopicId topicId = TopicId.fromString(yamlConfigManager.getTopicId());
-            TokenId tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
-
-            PrivateKey treasuryAccountKey = PrivateKey.fromString(yamlConfigManager.getTreasuryAccountKey());
-            AccountId treasuryAccount = AccountId.fromString(yamlConfigManager.getTreasuryAccount());
 //            MirrorOracle oracle = new MirrorOracle(treasuryAccountKey, treasuryAccount, secrets.network(), topicId);
-            Threads.hcsOracle = new HCSOracle(treasuryAccountKey, treasuryAccount, secrets.network(), topicId, tokenId, yamlConfigManager.getHotspotIdAccountMap());
+            Threads.hcsOracle = new HCSOracle(yamlConfigManager, secrets.network());
             Thread oracleThread = new Thread(Threads.hcsOracle);
             oracleThread.start();
         }
