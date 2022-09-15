@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package com.hedera.proto;
+
+option java_package = "com.hedera.proto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+message BeaconReport {
+  int32 id = 1;
+  string region = 2;
+}
+message WitnessReport {
+  int32 witnessingId = 1;
+  int32 witnessedId = 2;
+}
+message Report {
+  oneof reportType {
+    BeaconReport beaconReport = 1;
+    WitnessReport witnessReport = 2;
+  }
+}
