@@ -23,19 +23,24 @@ public class PostOraclesHandler implements Handler<RoutingContext> {
                 throw new Exception("Oracle is not running");
             }
             int epochDuration = 0;
-            int minReports = 0;
+            int minBeaconReports = 0;
+            int minWitnessReports = 0;
+
             JsonObject response = new JsonObject();
             response.put("result", "success");
 
             if (routingContext.queryParams().contains("epochDuration")) {
                 epochDuration = Integer.parseInt(routingContext.queryParams().get("epochDuration"));
             }
-            if (routingContext.queryParams().contains("minEpochReports")) {
-                minReports = Integer.parseInt(routingContext.queryParams().get("minEpochReports"));
+            if (routingContext.queryParams().contains("minBeaconReports")) {
+                minBeaconReports = Integer.parseInt(routingContext.queryParams().get("minBeaconReports"));
+            }
+            if (routingContext.queryParams().contains("minWitnessReports")) {
+                minWitnessReports = Integer.parseInt(routingContext.queryParams().get("minWitnessReports"));
             }
 
-            if ((epochDuration == 0) && (minReports == 0)) {
-                throw new Exception("Provide at least one of epochDuration or minEpochReports");
+            if ((epochDuration == 0) && (minBeaconReports == 0) && (minWitnessReports == 0)) {
+                throw new Exception("Provide at least one of epochDuration, minEpochReports or minWitnessReports");
             }
             if (epochDuration != 0) {
                 if (epochDuration < 10) {
@@ -44,13 +49,22 @@ public class PostOraclesHandler implements Handler<RoutingContext> {
                     Threads.hcsOracle.setEpochDuration(epochDuration);
                 }
             }
-            if (minReports != 0) {
-                if (minReports < 1) {
-                    throw new Exception("Min reports too low, minimum is 1");
+            if (minBeaconReports != 0) {
+                if (minBeaconReports < 1) {
+                    throw new Exception("Min beacon reports too low, minimum is 1");
                 } else {
-                    Threads.hcsOracle.setMinEpochReports(minReports);
+                    Threads.hcsOracle.setMinBeaconReports(minBeaconReports);
                 }
             }
+
+            if (minWitnessReports != 0) {
+                if (minWitnessReports < 1) {
+                    throw new Exception("Min witness reports too low, minimum is 1");
+                } else {
+                    Threads.hcsOracle.setMinWitnessReports(minWitnessReports);
+                }
+            }
+
             routingContext.response()
                     .putHeader("content-type", "application/json")
                     .end(Json.encodeToBuffer(response));
