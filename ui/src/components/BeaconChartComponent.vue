@@ -9,7 +9,7 @@
         :css-classes="cssClasses"
         :styles="styles"
         height=300
-        width="100%"
+        width="100vw"
     />
   </div>
 </template>
