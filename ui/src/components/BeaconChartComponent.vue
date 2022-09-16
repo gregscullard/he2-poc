@@ -1,5 +1,4 @@
 <template>
-  <div class="container">
     <Bar
         :chart-options="chartOptions"
         :chart-data="chartData"
@@ -8,10 +7,9 @@
         :plugins="plugins"
         :css-classes="cssClasses"
         :styles="styles"
-        height=300
-        width="100vw"
+        :height=height
+        responsive=true
     />
-  </div>
 </template>
 
 <script>
@@ -43,7 +41,7 @@ export default {
     },
     height: {
       type: Number,
-      default: 400
+      default: 200
     },
     cssClasses: {
       default: '',
@@ -60,49 +58,81 @@ export default {
   },
   data() {
     return {
+      interval: null,
       chartData: {
-        labels: [ 'January', 'February', 'March' ],
-        datasets: [ { data: [40, 20, 12] } ]
+        labels: [],
+        datasets: []
       },
       chartOptions: {
-        responsive: true
+        responsive: true,
+        scales: {
+          x: {
+            stacked: true,
+            grid: {
+              display: false
+            },
+          },
+          y: {
+            stacked: true
+          }
+        }
       }
     }
   },
   async mounted() {
     await this.hotspotBeaconReports();
+    this.interval = setInterval(() => {
+      this.hotspotBeaconReports();
+    }, 5000);
+  },
+  beforeUnmount() {
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
   },
   methods: {
     async hotspotBeaconReports() {
       const newData = await getHotspotBeaconReports(this.hotspotId);
 
-      let ordered = Object.keys(newData).sort().reduce(
-          (obj, key) => {
-            obj[key] = newData[key];
-            return obj;
-          },
-          {}
-      );
+      let labels = [];
+      let witnesses = [];
+      let beacons = [];
+      let beaconsPaid = [];
+      const keys = Object.keys(newData.reports);
+      for (let i = 0; i < keys.length; i++) {
+        const report = newData.reports[keys[i]];
 
-      let labels = Object.keys(ordered);
-      let data = Object.values(ordered);
-      if (labels.length > 50) {
-        labels = labels.slice(-50);
-        data = data.slice(-50);
-      }
-
-      for (let i=0; i < labels.length; i++) {
-        labels[i] = new Date(labels[i] * 1000).toLocaleTimeString();
+        labels.push(new Date(report.epochStartSeconds * 1000).toLocaleTimeString());
+        witnesses.push(report.witnessCount);
+        if (report.rewardPaid) {
+          beacons.push(0);
+          beaconsPaid.push(report.beaconCount);
+        } else {
+          beacons.push(report.beaconCount);
+          beaconsPaid.push(0);
+        }
       }
 
       this.chartData = {
         labels: labels,
-        datasets: [{label: '# of Beacon Reports', data: data}]
+        datasets: [
+          {type: 'bar', label: '# of Beacon Reports', data: beacons, backgroundColor: 'rgba(54, 162, 235, 0.2)'},
+          {type: 'bar', label: '# of Paid Beacon Reports', data: beaconsPaid, backgroundColor: 'rgba(140,19,229,0.2)'},
+          {type: 'bar', label: '# of Witness Reports', data: witnesses, backgroundColor: 'rgba(16,220,74,0.2)'},
+        ]
       };
-
-      console.log(this.chartData);
+    }
+  },
+  watch:{
+    async hotspotId() {
+      await this.hotspotBeaconReports();
+    },
+    async refresh() {
+      await this.hotspotBeaconReports();
+      console.log(`refreshing ${this.refresh}`);
     }
   }
+
 }
 </script>
 
