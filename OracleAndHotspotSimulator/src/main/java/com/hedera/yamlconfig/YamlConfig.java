@@ -91,10 +91,19 @@ public class YamlConfig {
         return accountIds;
     }
 
-    public Map<Integer, AccountId> getHotspotIdAccountMap() {
-        Map<Integer, AccountId> accountIds = new HashMap<>();
+    public Map<Integer, List<AccountId>> getHotspotPaidAccountsByIdMap() {
+        Map<Integer, List<AccountId>> accountIds = new HashMap<>();
         for (int i=0; i<hotspots.size(); i++) {
-            accountIds.put(hotspots.get(i).getId(), AccountId.fromString(hotspots.get(i).getAccountId()));
+            List<AccountId> paidAccountIds = new ArrayList<>();
+            List<String> accountsAsStrings = hotspots.get(i).getPaidAccounts();
+            if (accountsAsStrings.size() != 0) {
+                for (String accountId : accountsAsStrings) {
+                    paidAccountIds.add(AccountId.fromString(accountId));
+                }
+            } else {
+                paidAccountIds.add(AccountId.fromString(hotspots.get(i).getAccountId()));
+            }
+            accountIds.put(hotspots.get(i).getId(), paidAccountIds);
         }
         return accountIds;
     }

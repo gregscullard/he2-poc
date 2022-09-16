@@ -124,7 +124,7 @@ public class YamlConfigManager {
         return this.yamlConfig.getOracle().getMinWitnessReports();
     }
 
-    public Map<Integer, AccountId> getHotspotIdAccountMap() {
-        return this.yamlConfig.getHotspotIdAccountMap();
+    public Map<Integer, List<AccountId>> getHotspotPaidAccountsByIdMap() {
+        return this.yamlConfig.getHotspotPaidAccountsByIdMap();
     }
 }
