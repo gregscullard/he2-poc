@@ -9,7 +9,7 @@ import "google/protobuf/timestamp.proto";
 
 message BeaconReport {
   int32 id = 1;
-  string region = 2;
+  string name = 2;
 }
 message WitnessReport {
   int32 witnessingId = 1;
