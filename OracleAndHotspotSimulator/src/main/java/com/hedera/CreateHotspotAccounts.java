@@ -15,6 +15,7 @@ public class CreateHotspotAccounts {
     public static void main(String[] args) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         CreateHotspotAccounts createHotspotAccounts = new CreateHotspotAccounts();
         createHotspotAccounts.create();
+        System.exit(0);
     }
      public void create() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
         List<YamlHotspot> hotspotList = new ArrayList<>();
@@ -27,36 +28,52 @@ public class CreateHotspotAccounts {
             return;
         }
 
-        for (int i=0; i < 10; i++) {
+        TokenId tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
+        String[] names = {"London", "Paris", "New York"};
+        for (int i=0; i < 3; i++) {
+            List<String> paidAccounts = new ArrayList<>();
+
             PrivateKey accountKey = PrivateKey.generateED25519();
-            TransactionResponse response = new AccountCreateTransaction()
-                    .setInitialBalance(new Hbar(10))
-                    .setKey(accountKey.getPublicKey())
-                    .execute(client);
+            String accountId = createAndAssociate(client, accountKey, tokenId);
 
-            TransactionReceipt receipt = response.getReceipt(client);
-            String accountId = receipt.accountId.toString();
-            log.info("Created Hotspot Account Id {}", accountId);
-
-            response = new TokenAssociateTransaction()
-                    .setTokenIds(List.of(TokenId.fromString(yamlConfigManager.getTokenId())))
-                    .setAccountId(AccountId.fromString(accountId))
-                    .freezeWith(client)
-                    .sign(accountKey)
-                    .execute(client);
-            receipt = response.getReceipt(client);
-            log.info("Token associated");
+            if (i == 1) {
+                String otherAccount = createAndAssociate(client, accountKey, tokenId);
+                paidAccounts.add(otherAccount);
+                otherAccount = createAndAssociate(client, accountKey, tokenId);
+                paidAccounts.add(otherAccount);
+            }
 
             YamlHotspot yamlHotspot = new YamlHotspot(
                     i,
-                    "region.".concat(String.valueOf(i)),
+                    names[i],
                     accountId,
-                    accountKey.toString());
+                    accountKey.toString(),
+                    paidAccounts);
             hotspotList.add(yamlHotspot);
         }
 
-
         yamlConfigManager.setHotspots(hotspotList);
         yamlConfigManager.save();
+        client.close();
+    }
+    private String createAndAssociate(Client client, PrivateKey privateKey, TokenId tokenId) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        TransactionResponse response = new AccountCreateTransaction()
+                .setInitialBalance(new Hbar(10))
+                .setKey(privateKey.getPublicKey())
+                .execute(client);
+
+        TransactionReceipt receipt = response.getReceipt(client);
+        String accountId = receipt.accountId.toString();
+        log.info("Created Hotspot Account Id {}", accountId);
+
+        response = new TokenAssociateTransaction()
+                .setTokenIds(List.of(tokenId))
+                .setAccountId(AccountId.fromString(accountId))
+                .freezeWith(client)
+                .sign(privateKey)
+                .execute(client);
+        response.getReceipt(client);
+        log.info("Token associated");
+        return accountId;
     }
 }

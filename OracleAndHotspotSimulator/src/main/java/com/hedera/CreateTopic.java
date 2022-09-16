@@ -12,6 +12,7 @@ public class CreateTopic {
     public static void main(String[] args) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         CreateTopic createTopic = new CreateTopic();
         createTopic.create();
+        System.exit(0);
     }
     public void create() throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         Client client = Utils.clientFromEnv();
@@ -26,6 +27,7 @@ public class CreateTopic {
         YamlConfigManager yamlConfigManager = new YamlConfigManager();
         yamlConfigManager.setTopicId(topicId);
         yamlConfigManager.save();
+        client.close();
 
     }
 }

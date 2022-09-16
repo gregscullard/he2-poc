@@ -11,6 +11,7 @@ public class CreateAll {
     public static void main(String[] args) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         CreateAll createAll = new CreateAll();
         createAll.create();
+        System.exit(0);
     }
     public void create() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
         CreateToken createToken = new CreateToken();

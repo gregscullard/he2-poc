@@ -74,7 +74,7 @@ public class App {
             Thread.sleep(delay * 1000);
         }
     }
-    private void startBalanceChecker(YamlConfigManager yamlConfigManager, Secrets secrets) {
+    private void startBalanceChecker(YamlConfigManager yamlConfigManager, Secrets secrets) throws FileNotFoundException {
         Threads.balanceChecker = new BalanceChecker(yamlConfigManager.getHotspotAccountIds(), secrets.privateKey(), secrets.accountId(), secrets.network());
         Thread balanceCheckerThread = new Thread(Threads.balanceChecker);
         balanceCheckerThread.start();

@@ -18,6 +18,7 @@ public class CreateToken {
             tokenSymbol = args[1];
         }
         createToken.create(tokenName, tokenSymbol);
+        System.exit(0);
     }
     public void create(String tokenName, String tokenSymbol) throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
         Client client = Utils.clientFromEnv();
@@ -53,6 +54,6 @@ public class CreateToken {
 
         yamlConfigManager.setTokenId(tokenId);
         yamlConfigManager.save();
-
+        client.close();
     }
 }

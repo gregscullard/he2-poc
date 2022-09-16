@@ -12,6 +12,7 @@ public class CreateTreasuryAccount {
     public static void main(String[] args) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         CreateTreasuryAccount createTreasuryAccount = new CreateTreasuryAccount();
         createTreasuryAccount.create();
+        System.exit(0);
     }
     public void create() throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
         Client client = Utils.clientFromEnv();
@@ -31,5 +32,6 @@ public class CreateTreasuryAccount {
         yamlConfigManager.setTreasuryAccount(accountId);
         yamlConfigManager.setTreasuryAccountKey(treasuryAccountKey.toString());
         yamlConfigManager.save();
+        client.close();
     }
 }
