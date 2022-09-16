@@ -107,6 +107,11 @@ public class MirrorOracle implements Runnable {
                 }
             }
         }
+        try {
+            client.close();
+        } catch (TimeoutException e) {
+            log.error(e);
+        }
         executor.shutdown();
     }
 
