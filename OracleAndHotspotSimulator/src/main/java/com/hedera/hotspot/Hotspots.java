@@ -1,9 +1,7 @@
 package com.hedera.hotspot;
 
 import com.hedera.Secrets;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.*;
 import com.hedera.yamlconfig.YamlConfigManager;
 import com.hedera.yamlconfig.YamlHotspot;
 import io.vertx.core.json.JsonArray;
@@ -12,10 +10,10 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.FileNotFoundException;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 @Log4j2
 public final class Hotspots {
-//    private final static Map<Integer, Hotspot> threadMap = new HashMap<>();
     private final static NavigableMap<Integer, Hotspot> threadMap = new TreeMap<Integer, Hotspot>();
     private final YamlConfigManager yamlConfigManager;
     private final Secrets secrets;
@@ -23,6 +21,7 @@ public final class Hotspots {
     private final String network;
     private final List<YamlHotspot> hotspots;
     private int interval;
+    private int maxId = 0;
 
     public Hotspots() throws FileNotFoundException {
         this.yamlConfigManager = new YamlConfigManager();
@@ -31,6 +30,59 @@ public final class Hotspots {
         this.topicId = TopicId.fromString(yamlConfigManager.getTopicId());
         this.hotspots = yamlConfigManager.getHotspots();
         this.interval = yamlConfigManager.getReportInterval();
+        this.maxId = this.hotspots.size() - 1;
+    }
+
+    public String add(String name, String key) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+        Client client = Client.forName(secrets.network());
+        client.setOperator(secrets.accountId(), secrets.privateKey());
+        // create account
+        PrivateKey privateKey = PrivateKey.fromString(key);
+        TransactionResponse response = new AccountCreateTransaction()
+                .setKey(privateKey)
+                .setInitialBalance(new Hbar(5))
+                .execute(client);
+        TransactionReceipt receipt = response.getReceipt(client);
+
+        TokenId tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
+        response = new TokenAssociateTransaction()
+                .setTokenIds(List.of(tokenId))
+                .setAccountId(receipt.accountId)
+                .freezeWith(client)
+                .sign(privateKey)
+                .execute(client);
+        response.getReceipt(client);
+
+        client.close();
+        // add hotspot
+        YamlHotspot yamlHotspot = new YamlHotspot();
+        yamlHotspot.setAccountId(receipt.accountId.toString());
+        yamlHotspot.setPrivateKey(key);
+        yamlHotspot.setId(this.maxId + 1);
+        yamlHotspot.setName(name);
+
+        this.hotspots.add(yamlHotspot);
+        maxId += 1;
+
+        return "success";
+    }
+    public String enable(int id) {
+        if (! threadMap.containsKey(id)) {
+            String result = startHotspot(id);
+            return result;
+        } else {
+            return "invalid hotspot id";
+        }
+    }
+
+    public String disable(int id) {
+        if (threadMap.containsKey(id)) {
+            threadMap.get(id).stop();
+            threadMap.remove(id);
+            return "success";
+        } else {
+            return "invalid hotspot id";
+        }
     }
 
     public String setInterval(int interval) {
@@ -54,16 +106,6 @@ public final class Hotspots {
         return this.interval;
     }
 
-    public String startHotspot() {
-        String result = "success";
-        for (int i=0; i<hotspots.size(); i++) {
-            if ( ! threadMap.containsKey(i)) {
-                result = startHotspot(i);
-                return result;
-            }
-        }
-        return ("Maximum number of hotspots started already");
-    }
     public String startHotspot(int id) {
         String result = "success";
         if (threadMap.containsKey(id)) {
@@ -75,53 +117,37 @@ public final class Hotspots {
         YamlHotspot hotspot = this.hotspots.get(id);
         PrivateKey privateKey = PrivateKey.fromString(hotspot.getPrivateKey());
         AccountId accountId = AccountId.fromString(hotspot.getAccountId());
-        String region = hotspot.getRegion();
+        String name = hotspot.getName();
+        List<String> paidAccounts = hotspot.getPaidAccounts();
 
-        Hotspot hotspotInstance = new Hotspot(id, region, topicId, privateKey, accountId, network);
+        Hotspot hotspotInstance = new Hotspot(id, name, topicId, privateKey, accountId, network, paidAccounts, this);
         hotspotInstance.setIntervalMs(this.interval);
         Thread thread = new Thread(hotspotInstance);
         threadMap.put(id, hotspotInstance);
         thread.start();
         return result;
     }
-    public String stopHotSpot() {
-        String result = "success";
-        if (threadMap.isEmpty()) {
-            result = "No more hotspots to stop";
-            log.warn(result);
-            return result;
-        }
-        Integer lastKey = threadMap.lastEntry().getKey();
-        result = stopHotSpot(lastKey);
-        threadMap.remove(lastKey);
-        return result;
-    }
-    public String stopHotSpot(int id) {
-        String result = "success";
-        if ( ! threadMap.containsKey(id)) {
-            result = "Hotspot id %d already stopped";
-            result = String.format(result, id);
-            log.warn(result);
-            return result;
-        }
-        threadMap.get(id).stop();
-        return result;
-    }
-    public void stopAll() {
-        threadMap.forEach((id, thread) -> {
-            thread.stop();
-        });
+
+    public int hotspotCount() {
+        return this.threadMap.size();
     }
 
     public JsonObject getDetails() {
-
         JsonObject response = new JsonObject();
         JsonArray details = new JsonArray();
         for (YamlHotspot hotspot : yamlConfigManager.getHotspots()) {
             JsonObject hotspotJson = new JsonObject();
             hotspotJson.put("id", hotspot.getId());
-            hotspotJson.put("region", hotspot.getRegion());
+            hotspotJson.put("name", hotspot.getName());
             hotspotJson.put("enabled", false);
+            hotspotJson.put("accountId", hotspot.getAccountId());
+            if (hotspot.getPaidAccounts().size() == 0) {
+                JsonArray paidAccounts = new JsonArray();
+                paidAccounts.add(hotspot.getAccountId());
+                hotspotJson.put("paidAccounts", paidAccounts);
+            } else {
+                hotspotJson.put("paidAccounts", hotspot.getPaidAccounts());
+            }
             if ( threadMap.containsKey(hotspot.getId())) {
                 Hotspot hotspotInstance = threadMap.get(hotspot.getId());
                 hotspotJson.put("runData", hotspotInstance.getDetails());
