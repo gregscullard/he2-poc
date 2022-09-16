@@ -39,8 +39,7 @@ public class CreateHotspotAccounts {
             if (i == 1) {
                 String otherAccount = createAndAssociate(client, accountKey, tokenId);
                 paidAccounts.add(otherAccount);
-                otherAccount = createAndAssociate(client, accountKey, tokenId);
-                paidAccounts.add(otherAccount);
+                paidAccounts.add(accountId);
             }
 
             YamlHotspot yamlHotspot = new YamlHotspot(
