@@ -21,7 +21,10 @@ public class PostHotspotsHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext routingContext) {
 
         try {
-            String result = hotspots.startHotspot();
+            String name = routingContext.pathParams().get("name");
+            String key = routingContext.pathParams().get("key");
+            
+            String result = hotspots.add(name, key);
             JsonObject response = new JsonObject();
             response.put("result", result);
             routingContext.response()

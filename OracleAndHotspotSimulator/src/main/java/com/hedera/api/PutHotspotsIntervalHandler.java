@@ -8,10 +8,10 @@ import io.vertx.ext.web.RoutingContext;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-public class PostHotspotsIntervalHandler implements Handler<RoutingContext> {
+public class PutHotspotsIntervalHandler implements Handler<RoutingContext> {
 
     private final Hotspots hotspots;
-    public PostHotspotsIntervalHandler(Hotspots hotspots) {
+    public PutHotspotsIntervalHandler(Hotspots hotspots) {
         this.hotspots = hotspots;
     }
 

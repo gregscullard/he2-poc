@@ -49,9 +49,13 @@ public class ApiVerticle extends AbstractVerticle {
         // hotspots
         GetHotspotsHandler getHotSpotsHandler = new GetHotspotsHandler(hotspots);
         PostHotspotsHandler postHotspotsHandler = new PostHotspotsHandler(hotspots);
-        DeleteHotspotHandler deleteHotspotHandler = new DeleteHotspotHandler(hotspots);
+
+        // hotspot
+        PutHotspotsEnableHandler putHotspotsEnableHandler = new PutHotspotsEnableHandler(hotspots);
+        PutHotspotsDisableHandler putHotspotsDisableHandler = new PutHotspotsDisableHandler(hotspots);
+
         // hotspots interval
-        PostHotspotsIntervalHandler postHotspotsIntervalHandler = new PostHotspotsIntervalHandler(hotspots);
+        PutHotspotsIntervalHandler putHotspotsIntervalHandler = new PutHotspotsIntervalHandler(hotspots);
         // oracles
         PostOraclesHandler postOraclesHandler = new PostOraclesHandler();
         GetOraclesHandler getOraclesHandler = new GetOraclesHandler();
@@ -71,24 +75,28 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/api/v1/hotspots")
                 .handler(getHotSpotsHandler);
 
-        router.post("/api/v1/hotspots")
-                .handler(authenticationHandler)
-                .handler(postHotspotsHandler);
-
-        router.delete("/api/v1/hotspots")
-                .handler(authenticationHandler)
-                .handler(deleteHotspotHandler);
-
         router.get("/api/v1/hotspots/beaconReports/:id")
                 .handler(getBeaconReportsHandler);
 
-        router.post("/api/v1/hotspots/interval/:id/:interval")
-                .handler(authenticationHandler)
-                .handler(postHotspotsIntervalHandler);
-
         router.post("/api/v1/hotspots/interval/:interval")
                 .handler(authenticationHandler)
-                .handler(postHotspotsIntervalHandler);
+                .handler(putHotspotsIntervalHandler);
+
+        router.post("/api/v1/hotspots/:name/:key")
+                .handler(authenticationHandler)
+                .handler(postHotspotsHandler);
+
+        router.put("/api/v1/hotspots/:id/interval/:interval")
+                .handler(authenticationHandler)
+                .handler(putHotspotsIntervalHandler);
+
+        router.put("/api/v1/hotspots/:id/disable")
+                .handler(authenticationHandler)
+                .handler(putHotspotsDisableHandler);
+
+        router.put("/api/v1/hotspots/:id/enable")
+                .handler(authenticationHandler)
+                .handler(putHotspotsEnableHandler);
 
         router.post("/api/v1/oracles")
                 .handler(authenticationHandler)
@@ -97,11 +105,11 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/api/v1/oracles")
                 .handler(getOraclesHandler);
 
-        //        router.get("/v1/bids/:auctionid")
-//                .handler(getBidsHandler);
-
         router.get("/").handler(rootHandler);
 
+        //minBeacons
+        //minWitness
+        //epoch
         server
                 .requestHandler(router)
                 .exceptionHandler(error -> {
