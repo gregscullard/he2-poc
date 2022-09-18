@@ -6,11 +6,16 @@
           <div class="card-header">
             Controls
           </div>
-          <div class="card-body" v-if="currentHotspot()">
-            <div class="input-group mb-3 form-floating" v-if="currentHotspot().enabled">
-              <input v-model="reportInterval" type="number" class="form-control" id="reportInterval" aria-describedby="btnReportInterval">
-              <label for="reportInterval">Report interval ({{ currentHotspot().name }})</label>
-              <button @click="setReportInterval" class="btn btn-outline-secondary" type="button" id="btnReportInterval">Apply</button>
+          <div class="card-body">
+            <div  v-if="currentHotspot()">
+              <div class="input-group mb-3 form-floating" v-if="currentHotspot().enabled">
+                <input v-model="reportInterval" type="number" class="form-control" id="reportInterval" aria-describedby="btnReportInterval">
+                <label for="reportInterval">Report interval ({{ currentHotspot().name }})</label>
+                <button @click="setReportInterval" class="btn btn-outline-secondary" type="button" id="btnReportInterval">Apply</button>
+              </div>
+            </div>
+            <div v-else>
+              <p>please select a hotspot</p>
             </div>
             <div class="input-group mb-3 form-floating">
               <input v-model="reportIntervalAll" type="number" class="form-control" id="reportIntervalAll" aria-describedby="btnReportIntervalAll">
@@ -20,17 +25,17 @@
             <div class="input-group mb-3 form-floating">
               <input v-model="minBeacons" type="number" class="form-control" id="minBeacons" aria-describedby="btnMinBeacons">
               <label for="minBeacons">Minimum required beacons</label>
-              <button @click="hotspotsPlus" class="btn btn-outline-secondary" type="button" id="btnMinBeacons">Apply</button>
+              <button @click="setMinBeacons" class="btn btn-outline-secondary" type="button" id="btnMinBeacons">Apply</button>
             </div>
             <div class="input-group mb-3 form-floating">
               <input v-model="minWitness" type="number" class="form-control" id="minWitness" aria-describedby="btnMinWitness">
-              <label for="minWitness">Minimum required beacons</label>
-              <button @click="hotspotsPlus" class="btn btn-outline-secondary" type="button" id="btnMinWitness">Apply</button>
+              <label for="minWitness">Minimum required witnesses</label>
+              <button @click="setMinWitness" class="btn btn-outline-secondary" type="button" id="btnMinWitness">Apply</button>
             </div>
             <div class="input-group mb-3 form-floating">
               <input v-model="epochSeconds" type="number" class="form-control" id="epochSeconds" aria-describedby="btnEpochSeconds">
               <label for="minWitness">Epoch (seconds)</label>
-              <button @click="hotspotsPlus" class="btn btn-outline-secondary" type="button" id="btnEpochSeconds">Apply</button>
+              <button @click="setEpochSeconds" class="btn btn-outline-secondary" type="button" id="btnEpochSeconds">Apply</button>
             </div>
           </div>
         </div>
@@ -99,6 +104,72 @@
         </div>
       </div>
     </div>
+    <div class="row" v-if="currentHotspot()">
+      <div class="col">
+      <div class="card">
+        <div class="card-header">
+          On ledger Transactions for {{ currentHotspot().name }} (beacons and witness reports)
+        </div>
+        <div class="card-body">
+          <table class="table table-striped table-hover border-1">
+            <thead>
+            <tr>
+              <th scope="col">Id</th>
+              <th scope="col">Timestamp</th>
+              <th scope="col">Node</th>
+              <th scope="col">Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr
+                v-for="transaction in transactions"
+                v-bind:key="transaction.transaction_id"
+                >
+              <td>{{ transaction.transaction_id}}</td>
+              <td>{{ dateFromTimestamp(transaction.consensus_timestamp) }}</td>
+              <td>{{ transaction.node }}</td>
+              <td>{{ transaction.result }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="row" v-if="currentHotspot()">
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            Token receipts for {{ currentHotspot().name }}
+          </div>
+          <div class="card-body">
+            <table class="table table-striped table-hover border-1">
+              <thead>
+              <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Status</th>
+                <th scope="col">Token Id</th>
+                <th scope="col">Amount</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                  v-for="transaction in transfers"
+                  v-bind:key="transaction.transaction_id"
+              >
+                <td>{{ transaction.transaction_id}}</td>
+                <td>{{ transaction.consensus_timestamp }}</td>
+                <td>{{ transaction.result }}</td>
+                <td> {{ transaction.token_id }}</td>
+                <td> {{ transaction.amount }}</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -106,12 +177,13 @@
 
 import BeaconChartComponent from "@/components/BeaconChartComponent";
 import {
-  addHotspot,
+  apiAddHotspot,
   apiSetReportInterval,
   apiSetReportIntervalAll,
-  disableHotspot,
-  enableHotspot
+  apiDisableHotspot,
+  apiEnableHotspot, apiSetEpochSeconds, apiSetMinWitness, apiSetMinBeacons
 } from "@/service/hotspots";
+import {mirrorGetReports, tokenTransfers} from "@/service/mirror";
 
 export default {
   name: 'HotspotsComponent',
@@ -131,23 +203,63 @@ export default {
       reportIntervalAll: 10000,
       minBeacons: 2,
       minWitness: 1,
-      epochSeconds: 10
+      epochSeconds: 10,
+      transactions: [],
+      interval: null,
+      transfers: []
     };
   },
+  async mounted() {
+    this.interval = setInterval(() => {
+      this.getTransactions();
+    }, 2000);
+  },
+  beforeUnmount() {
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+  },
   methods: {
+    dateFromTimestamp(timestamp) {
+      const timestampParts = timestamp.split(".");
+      return new Date(timestampParts[0] * 1000).toLocaleString();
+    },
+    async getTransactions() {
+      const data = await mirrorGetReports(this.currentHotspot().accountId);
+      this.transactions = data.transactions;
+
+      const transferResponse = await tokenTransfers(this.currentHotspot().accountId);
+      const reducedResponse = [];
+      transferResponse.transactions.forEach(transaction => {
+        const oneTransfer = {};
+        oneTransfer.consensus_timestamp = this.dateFromTimestamp(transaction.consensus_timestamp);
+        oneTransfer.transaction_id = transaction.transaction_id;
+        oneTransfer.result = transaction.result;
+        const tokenTransfers = transaction.token_transfers;
+        tokenTransfers.forEach(transfer => {
+          if (transfer.account == this.currentHotspot().accountId) {
+            oneTransfer.token_id = transfer.token_id;
+            oneTransfer.amount = transfer.amount;
+          }
+        });
+        reducedResponse.push(oneTransfer);
+      });
+
+      this.transfers = reducedResponse;
+    },
     setHotspotId(id) {
       console.log(`Setting id to ${id}`);
       this.currentHotspotId = id;
+      this.transactions = [];
     },
     hostspotEnable(id) {
-      enableHotspot(id);
+      apiEnableHotspot(id);
     },
     hostspotDisable(id) {
-      disableHotspot(id);
+      apiDisableHotspot(id);
     },
     hotspotsPlus() {
-      console.log(`${this.name} - ${this.key}`);
-      addHotspot(this.name, this.key);
+      apiAddHotspot(this.name, this.key);
     },
     secondsToDate(seconds) {
       return new Date(seconds * 1000).toLocaleString();
@@ -161,14 +273,17 @@ export default {
     async setReportIntervalAll() {
       await apiSetReportIntervalAll(this.reportIntervalAll);
     },
-    setMinBeacons() {
-      // minBeacons: 2,
+    async setMinBeacons() {
+      await apiSetMinBeacons(this.beaconReports);
     },
-    setMinWitness() {
-      // minWitness: 1,
+    async setMinWitness() {
+      await apiSetMinWitness(this.minWitness);
     },
-    setEpochSeconds() {
-      // epochSeconds: 10
+    async setEpochSeconds() {
+      await apiSetEpochSeconds(this.epochSeconds);
+    },
+    concatAccountAndtoken(tokenTransfer) {
+      return `${tokenTransfer.token_id}-${tokenTransfer.account}`;
     }
 
   },

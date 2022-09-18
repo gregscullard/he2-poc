@@ -1,5 +1,6 @@
 package com.hedera.api;
 
+import com.hedera.Threads;
 import com.hedera.Utils;
 import com.hedera.hotspot.Hotspots;
 import com.hedera.yamlconfig.YamlConfigManager;
@@ -23,7 +24,7 @@ import java.util.Set;
  */
 @Log4j2
 public class ApiVerticle extends AbstractVerticle {
-    Hotspots hotspots = new Hotspots();
+    Hotspots hotspots = Threads.hotspots;
 
     public ApiVerticle() throws FileNotFoundException {
     }

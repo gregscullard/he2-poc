@@ -18,7 +18,7 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <script>
 import HotspotsComponent from "./HotspotsComponent"
-import {getHotspots} from "../service/hotspots"
+import {apiGetHotspots} from "../service/hotspots"
 
 export default {
   name: "HeaderComponent",
@@ -32,11 +32,11 @@ export default {
     };
   },
   async created() {
-    const newHotspots = await getHotspots();
+    const newHotspots = await apiGetHotspots();
     this.hotspots = newHotspots.hotspots;
 
     this.interval = setInterval(async () => {
-      const newHotspots = await getHotspots();
+      const newHotspots = await apiGetHotspots();
       this.hotspots = newHotspots.hotspots;
     }, 1000);
   },
@@ -47,7 +47,7 @@ export default {
   },
   methods: {
     async getHotspotsList() {
-      const newHotspots = await getHotspots();
+      const newHotspots = await apiGetHotspots();
       this.hotspots = newHotspots.hotspots;
     },
   },

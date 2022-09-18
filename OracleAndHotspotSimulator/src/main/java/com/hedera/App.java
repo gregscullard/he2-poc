@@ -2,10 +2,7 @@ package com.hedera;
 
 import com.hedera.api.ApiVerticle;
 import com.hedera.balancechecker.BalanceChecker;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.*;
 import com.hedera.hotspot.Hotspots;
 import com.hedera.oracle.HCSOracle;
 import com.hedera.yamlconfig.YamlConfigManager;
@@ -18,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.TimeoutException;
 
 @Log4j2
 public class App {
@@ -32,7 +30,6 @@ public class App {
 
         YamlConfigManager yamlConfigManager = new YamlConfigManager();
         Secrets secrets = new Secrets();
-
         if (yamlConfigManager.getHotspots().isEmpty()) {
             log.error("No hotspot details found in config.yaml");
             return;
@@ -41,14 +38,12 @@ public class App {
             log.error("No topic configuration found in config.yaml");
             return;
         }
+        Threads.hotspots = new Hotspots();
 
         startApi(yamlConfigManager);
 
-        if (yamlConfigManager.isHotspotsSimulator()) {
-            startBalanceChecker(yamlConfigManager, secrets);
-            startHotspots(yamlConfigManager);
-        }
-
+        // hotspots broadcast themselves on the network when added,
+        // need to start the oracle first (it starts polling from "now" for this POC)
         if (yamlConfigManager.isOracle()) {
 //            MirrorOracle oracle = new MirrorOracle(treasuryAccountKey, treasuryAccount, secrets.network(), topicId);
             Threads.hcsOracle = new HCSOracle(yamlConfigManager, secrets.network());
@@ -56,17 +51,16 @@ public class App {
             oracleThread.start();
         }
 
-//        // stop threads
-//        hotspots.stopAll();
-//
-//        vertx.close();
+        if (yamlConfigManager.isHotspotsSimulator()) {
+            startBalanceChecker(yamlConfigManager, secrets);
+            startHotspots(yamlConfigManager);
+        }
     }
 
-    private void startHotspots(YamlConfigManager yamlConfigManager) throws FileNotFoundException, InterruptedException {
+    private void startHotspots(YamlConfigManager yamlConfigManager) throws FileNotFoundException, InterruptedException, PrecheckStatusException, TimeoutException {
         int hotspotsToStart = yamlConfigManager.getHotSpotsToStart();
-        Hotspots hotspots = new Hotspots();
         for (int i=0; i < hotspotsToStart; i++) {
-            hotspots.startHotspot(i);
+            Threads.hotspots.startHotspot(i);
             // random delay between 1 and 3 seconds
             Random rand = new Random();
             int upperbound = 3;
@@ -132,8 +126,6 @@ public class App {
         DeploymentOptions options = new DeploymentOptions().setConfig(config).setInstances(yamlConfigManager.getApiVerticleCount());
         vertx
                 .deployVerticle(ApiVerticle.class.getName(), options)
-                .onFailure(error -> {
-                    log.error(error.getMessage());
-                });
+                .onFailure(error -> log.error(error.getMessage()));
     }
 }

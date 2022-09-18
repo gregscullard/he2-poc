@@ -2,6 +2,7 @@ package com.hedera.oracle;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.*;
+import com.hedera.proto.Hotspot;
 import com.hedera.proto.Report;
 import com.hedera.yamlconfig.YamlConfigManager;
 import com.hedera.yamlconfig.YamlHotspot;
@@ -9,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +37,8 @@ public class HCSOracle implements Runnable {
     ConcurrentHashMap<Integer, HotspotReports> hotspotReportsMap = new ConcurrentHashMap<>();
     long currentEpoch = 0;
     long currentEpochStart = 0;
-    private final Map<Integer, List<AccountId>> hotspotPaidAccountsById;
-    private List<YamlHotspot> hotspots;
+    private  Map<Integer, List<AccountId>> hotspotPaidAccountsById = new HashMap<>();
+    private Map<Integer, YamlHotspot> hotspots = new HashMap<>();
 
     // Hedera client
     public HCSOracle(YamlConfigManager yamlConfigManager, String network) throws Exception {
@@ -45,8 +47,6 @@ public class HCSOracle implements Runnable {
         this.network = network;
         this.topicId = TopicId.fromString(yamlConfigManager.getTopicId());
         this.tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
-        this.hotspotPaidAccountsById = yamlConfigManager.getHotspotPaidAccountsByIdMap();
-        this.hotspots = yamlConfigManager.getHotspots();
 
         this.minEpochReports = yamlConfigManager.getOracleMinEpochReports();
         this.epochSeconds = yamlConfigManager.getOracleEpochSeconds();
@@ -98,87 +98,119 @@ public class HCSOracle implements Runnable {
     // for example, if the epoch is 1 day and minEpochReports is 24, then
     // a reward would be paid if the hotspot sent a report more than 24 times.
     private void messageHandler(TopicMessage message) {
-        log.debug("Got HCS Message");
+//        log.debug("Got HCS Message");
         try {
+
             Report report = Report.parseFrom(message.contents);
 
-            Instant reportTimestamp = message.consensusTimestamp;
-            //TODO: calculate epoch properly
-            long timestampSeconds = reportTimestamp.getEpochSecond();
-            log.debug("epochSeconds is {}", epochSeconds);
-            long reportEpoch = timestampSeconds / epochSeconds;
-            if (currentEpoch == 0) {
-                currentEpoch = reportEpoch;
-                currentEpochStart = timestampSeconds;
-            }
-            // check the current epoch is still the same, if different issue payments
-            if (currentEpoch != reportEpoch) {
-                log.debug("minEpochReports is {}", minEpochReports);
-                // new epoch, pay hotspots for their reports
-                for (Map.Entry<Integer, HotspotReports> reports : hotspotReportsMap.entrySet()) {
-                    HotspotReports reportsToCheck = reports.getValue();
-                    HotspotReportsCounter countersToCheck = reportsToCheck.getReportByEpoch(currentEpoch, currentEpochStart);
-                    int beaconCount = countersToCheck.getBeaconCount();
-                    int witnessCount = countersToCheck.getWitnessCount();
-                    if ((beaconCount >= minEpochReports) && (witnessCount >= minWitnessReports)) {
-                        log.info("*** Epoch ({}) Rewarding hotspot {}({}) for {} reports and {} witnesses", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), beaconCount, witnessCount);
-                        int rewardCount = 0;
-                        try {
-                            long payment = 2;
-                            rewardCount = issueBeaconReward(reports.getKey(), payment);
-                            // update the counters to show payment
-                            countersToCheck.setRewardPaid(payment);
-                            reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
-                            hotspotReportsMap.put(reports.getKey(), reportsToCheck);
-                        } catch (PrecheckStatusException e) {
-                            log.error(e);
-                        } catch (TimeoutException e) {
-                            log.error(e);
+            if (report.hasHotspot()) {
+                YamlHotspot yamlHotspot = new YamlHotspot();
+                Hotspot hotspotProto = report.getHotspot();
+                int id = hotspotProto.getId();
+                yamlHotspot.setId(id);
+                yamlHotspot.setName(hotspotProto.getName());
+                yamlHotspot.setPaidAccounts(hotspotProto.getAccountIdsList());
+                yamlHotspot.setAccountId(hotspotProto.getAccountId());
+
+                hotspots.put(id, yamlHotspot);
+                List<AccountId> accountIds = new ArrayList<>();
+                for (String accountId : hotspotProto.getAccountIdsList()) {
+                    accountIds.add(AccountId.fromString(accountId));
+                }
+                hotspotPaidAccountsById.put(id, accountIds);
+            } else {
+
+                Instant reportTimestamp = message.consensusTimestamp;
+                //TODO: calculate epoch properly
+                long timestampSeconds = reportTimestamp.getEpochSecond();
+                long reportEpoch = timestampSeconds / epochSeconds;
+                if (currentEpoch == 0) {
+                    currentEpoch = reportEpoch;
+                    currentEpochStart = timestampSeconds;
+                }
+                // check the current epoch is still the same, if different issue payments
+                if (currentEpoch != reportEpoch) {
+                    // new epoch, pay hotspots for their reports
+                    for (Map.Entry<Integer, HotspotReports> reports : hotspotReportsMap.entrySet()) {
+                        HotspotReports reportsToCheck = reports.getValue();
+                        HotspotReportsCounter countersToCheck = reportsToCheck.getReportByEpoch(currentEpoch, currentEpochStart);
+                        int beaconCount = countersToCheck.getBeaconCount();
+                        int witnessCount = countersToCheck.getWitnessCount();
+                        if ((beaconCount >= minEpochReports) && (witnessCount >= minWitnessReports)) {
+                            log.info("*** Epoch ({}) Rewarding hotspot {}({}) for {} reports and {} witnesses", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), beaconCount, witnessCount);
+                            int rewardCount = 0;
+                            try {
+                                long payment = 4;
+                                rewardCount = issueBeaconReward(reports.getKey(), payment);
+                                // update the counters to show payment
+                                countersToCheck.setRewardPaid(payment);
+                                reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
+                                hotspotReportsMap.put(reports.getKey(), reportsToCheck);
+                            } catch (PrecheckStatusException e) {
+                                log.error(e);
+                            } catch (TimeoutException e) {
+                                log.error(e);
+                            }
+                            log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
+                        } else if (beaconCount >= minEpochReports) {
+                            log.info("!!! Epoch ({}) Hotspot {}({}) did not beacon sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), beaconCount, minEpochReports);
+                        } else {
+                            try {
+                                log.info("!!! Epoch ({}) Hotspot {}({}) was not witnessed sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), witnessCount, minWitnessReports);
+                                int rewardCount = 0;
+                                try {
+                                    long payment = 2;
+                                    rewardCount = issueBeaconReward(reports.getKey(), payment);
+                                    // update the counters to show payment
+                                    countersToCheck.setRewardPaid(payment);
+                                    reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
+                                    hotspotReportsMap.put(reports.getKey(), reportsToCheck);
+                                } catch (PrecheckStatusException e) {
+                                    log.error(e);
+                                } catch (TimeoutException e) {
+                                    log.error(e);
+                                }
+                                log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
+                            } catch (Exception e) {
+                                log.error(e);
+                            }
                         }
-                        log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
-                    } else if (beaconCount >= minEpochReports) {
-                        log.info("!!! Epoch ({}) Hotspot {}({}) did not beacon sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), beaconCount, minEpochReports);
-                    } else {
-                        log.info("!!! Epoch ({}) Hotspot {}({}) was not witnessed sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), witnessCount, minWitnessReports);
                     }
-                }
-                currentEpoch = reportEpoch;
-                currentEpochStart = timestampSeconds;
-            }
-
-            int hotspotId = 0;
-            HotspotReports hotspotReports = new HotspotReports();
-            // is it a beacon report ?
-            if (report.hasBeaconReport()) {
-                // beacon report
-                hotspotId = report.getBeaconReport().getId();
-                // check if there is a report already for this hotspot
-                if (hotspotReportsMap.containsKey(hotspotId)) {
-                    hotspotReports = hotspotReportsMap.get(hotspotId);
+                    currentEpoch = reportEpoch;
+                    currentEpochStart = timestampSeconds;
                 }
 
-                log.debug("beacon report {}", reportTimestamp.getEpochSecond());
+                int hotspotId = 0;
+                HotspotReports hotspotReports = new HotspotReports();
+                // is it a beacon report ?
+                if (report.hasBeaconReport()) {
+                    // beacon report
+                    hotspotId = report.getBeaconReport().getId();
+                    // check if there is a report already for this hotspot
+                    if (hotspotReportsMap.containsKey(hotspotId)) {
+                        hotspotReports = hotspotReportsMap.get(hotspotId);
+                    }
 
-                HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
-                hotspotReportsCounter.addBeaconCount();
-                hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
-                hotspotReportsMap.put(hotspotId, hotspotReports);
-            } else if (report.hasWitnessReport()) {
-                // witness report
-                log.debug("witness report {}", reportTimestamp.getEpochSecond());
-                // beacon report
-                hotspotId = report.getWitnessReport().getWitnessedId();
-                // check if there is a report already for this hotspot
-                if (hotspotReportsMap.containsKey(hotspotId)) {
-                    hotspotReports = hotspotReportsMap.get(hotspotId);
+//                    log.debug("beacon report {}", reportTimestamp.getEpochSecond());
+                    HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
+                    hotspotReportsCounter.addBeaconCount();
+                    hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
+                    hotspotReportsMap.put(hotspotId, hotspotReports);
+                } else if (report.hasWitnessReport()) {
+                    // witness report
+//                    log.debug("witness report {}", reportTimestamp.getEpochSecond());
+                    // beacon report
+                    hotspotId = report.getWitnessReport().getWitnessedId();
+                    // check if there is a report already for this hotspot
+                    if (hotspotReportsMap.containsKey(hotspotId)) {
+                        hotspotReports = hotspotReportsMap.get(hotspotId);
+                    }
+
+                    HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
+                    hotspotReportsCounter.addWitnessCount();
+                    hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
+                    hotspotReportsMap.put(hotspotId, hotspotReports);
                 }
-
-                log.debug("beacon report {}", reportTimestamp.getEpochSecond());
-
-                HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
-                hotspotReportsCounter.addWitnessCount();
-                hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
-                hotspotReportsMap.put(hotspotId, hotspotReports);
             }
         } catch (InvalidProtocolBufferException e) {
             log.error(e);

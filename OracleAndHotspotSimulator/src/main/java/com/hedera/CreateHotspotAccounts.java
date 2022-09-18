@@ -27,17 +27,17 @@ public class CreateHotspotAccounts {
             log.error("Token details missing from config.yaml");
             return;
         }
+        long initialBalance = yamlConfigManager.getInitialHotspotBalance();
 
-        TokenId tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
         String[] names = {"London", "Paris", "New York"};
         for (int i=0; i < 3; i++) {
             List<String> paidAccounts = new ArrayList<>();
 
             PrivateKey accountKey = PrivateKey.generateED25519();
-            String accountId = createAndAssociate(client, accountKey, tokenId);
+            String accountId = createAccount(client, accountKey, initialBalance);
 
             if (i == 1) {
-                String otherAccount = createAndAssociate(client, accountKey, tokenId);
+                String otherAccount = createAccount(client, accountKey, initialBalance);
                 paidAccounts.add(otherAccount);
                 paidAccounts.add(accountId);
             }
@@ -55,24 +55,17 @@ public class CreateHotspotAccounts {
         yamlConfigManager.save();
         client.close();
     }
-    private String createAndAssociate(Client client, PrivateKey privateKey, TokenId tokenId) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    private String createAccount(Client client, PrivateKey privateKey, long balance) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         TransactionResponse response = new AccountCreateTransaction()
-                .setInitialBalance(new Hbar(10))
+                .setInitialBalance(new Hbar(balance))
                 .setKey(privateKey.getPublicKey())
+                .setMaxAutomaticTokenAssociations(2)
                 .execute(client);
 
         TransactionReceipt receipt = response.getReceipt(client);
         String accountId = receipt.accountId.toString();
         log.info("Created Hotspot Account Id {}", accountId);
 
-        response = new TokenAssociateTransaction()
-                .setTokenIds(List.of(tokenId))
-                .setAccountId(AccountId.fromString(accountId))
-                .freezeWith(client)
-                .sign(privateKey)
-                .execute(client);
-        response.getReceipt(client);
-        log.info("Token associated");
         return accountId;
     }
 }

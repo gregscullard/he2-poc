@@ -18,6 +18,16 @@ public class YamlConfig {
     private boolean hotspotsSimulator = false;
     private YamlOracle oracle = new YamlOracle();
 
+    private YamlSystem system = new YamlSystem();
+
+    public YamlSystem getSystem() {
+        return system;
+    }
+
+    public void setSystem(YamlSystem system) {
+        this.system = system;
+    }
+
     public boolean isHotspotsSimulator() {
         return hotspotsSimulator;
     }

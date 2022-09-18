@@ -19,7 +19,7 @@ public class BalanceChecker implements Runnable {
     private String network;
     private List<AccountId> accountIds;
     private final Client client;
-    private final Hbar hotspotThresholdAndTopup = new Hbar(5);
+    private final Hbar hotspotThresholdAndTopup;
     private final Hbar treasuryThresholdAndTopup = new Hbar(10);
     private final YamlConfigManager yamlConfigManager;
 
@@ -35,6 +35,7 @@ public class BalanceChecker implements Runnable {
         this.client.setMaxAttempts(1);
 
         this.yamlConfigManager = new YamlConfigManager();
+        this.hotspotThresholdAndTopup  = new Hbar(yamlConfigManager.getInitialHotspotBalance());
     }
 
     public synchronized void stop() {

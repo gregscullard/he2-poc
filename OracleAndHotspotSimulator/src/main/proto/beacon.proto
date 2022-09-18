@@ -5,7 +5,12 @@ package com.hedera.proto;
 option java_package = "com.hedera.proto";
 option java_multiple_files = true;
 
-import "google/protobuf/timestamp.proto";
+message Hotspot {
+  int32 id = 1;
+  string name = 2;
+  string accountId = 3;
+  repeated string accountIds = 4;
+}
 
 message BeaconReport {
   int32 id = 1;
@@ -19,5 +24,6 @@ message Report {
   oneof reportType {
     BeaconReport beaconReport = 1;
     WitnessReport witnessReport = 2;
+    Hotspot hotspot = 3;
   }
 }

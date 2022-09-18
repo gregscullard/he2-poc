@@ -15,7 +15,7 @@
 <script>
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
-import {getHotspotBeaconReports} from "@/service/hotspots";
+import {apiGetHotspotBeaconReports} from "@/service/hotspots";
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
@@ -92,7 +92,7 @@ export default {
   },
   methods: {
     async hotspotBeaconReports() {
-      const newData = await getHotspotBeaconReports(this.hotspotId);
+      const newData = await apiGetHotspotBeaconReports(this.hotspotId);
 
       let labels = [];
       let witnesses = [];
@@ -117,7 +117,7 @@ export default {
         labels: labels,
         datasets: [
           {type: 'bar', label: '# of Beacon Reports', data: beacons, backgroundColor: 'rgba(54, 162, 235, 0.2)'},
-          {type: 'bar', label: '# of Paid Beacon Reports', data: beaconsPaid, backgroundColor: 'rgba(140,19,229,0.2)'},
+          {type: 'bar', label: 'Paid Beacon Reports', data: beaconsPaid, backgroundColor: 'rgba(140,19,229,0.2)'},
           {type: 'bar', label: '# of Witness Reports', data: witnesses, backgroundColor: 'rgba(16,220,74,0.2)'},
         ]
       };

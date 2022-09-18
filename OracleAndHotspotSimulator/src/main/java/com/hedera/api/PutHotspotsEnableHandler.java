@@ -22,7 +22,7 @@ public class PutHotspotsEnableHandler implements Handler<RoutingContext> {
             JsonObject response = new JsonObject();
             if (routingContext.pathParams().containsKey("id")) {
                 int id = Integer.parseInt(routingContext.pathParam("id"));
-                result = hotspots.enable(id);
+                result = hotspots.startHotspot(id);
             }
             if (result.equals("success")) {
                 response.put("result", result);

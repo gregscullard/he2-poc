@@ -1,22 +1,28 @@
 package com.hedera.yamlconfig;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hotspot.Hotspot;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class YamlConfigManager {
     public YamlConfig yamlConfig;
+    private Map<Integer, YamlHotspot> hotspotMap = new HashMap<>();
 
     public YamlConfigManager() throws FileNotFoundException {
         if (Files.exists(Path.of("config.yaml"))) {
             Yaml yaml = new Yaml();
             InputStream inputStream = new FileInputStream(new File("config.yaml"));
             this.yamlConfig = yaml.load(inputStream);
+            for (YamlHotspot yamlHotspot : yamlConfig.getHotspots()) {
+                hotspotMap.put(yamlHotspot.getId(), yamlHotspot);
+            }
         } else {
             this.yamlConfig = new YamlConfig();
         }
@@ -53,6 +59,9 @@ public class YamlConfigManager {
     // Hotspots
     public List<YamlHotspot> getHotspots() {
         return yamlConfig.getHotspots();
+    }
+    public Map<Integer, YamlHotspot> getHotspotsAsMap() {
+        return this.hotspotMap;
     }
 
     // REST api
@@ -124,7 +133,8 @@ public class YamlConfigManager {
         return this.yamlConfig.getOracle().getMinWitnessReports();
     }
 
-    public Map<Integer, List<AccountId>> getHotspotPaidAccountsByIdMap() {
-        return this.yamlConfig.getHotspotPaidAccountsByIdMap();
+    // System
+    public long getInitialHotspotBalance() {
+        return this.yamlConfig.getSystem().getInitialHotspotBalance();
     }
 }
