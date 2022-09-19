@@ -40,8 +40,15 @@ public class YamlConfigManager {
         return this.yamlConfig.getToken().getTokenId();
     }
 
+    public String getNftTokenId() {
+        return this.yamlConfig.getToken().getNftTokenId();
+    }
     public void setTokenId(String tokenId) {
         this.yamlConfig.getToken().setTokenId(tokenId);
+    }
+
+    public void setNftTokenId(String tokenId) {
+        this.yamlConfig.getToken().setNftTokenId(tokenId);
     }
 
     public String getTreasuryAccount() {

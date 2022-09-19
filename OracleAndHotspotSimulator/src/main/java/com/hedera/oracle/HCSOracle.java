@@ -7,6 +7,7 @@ import com.hedera.yamlconfig.YamlHotspot;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ public class HCSOracle implements Runnable {
     private final Client client;
 
     private final TokenId tokenId;
+    private final TokenId nftTokenId;
 
     private long epochSeconds;
     private int minEpochReports;
@@ -42,7 +44,7 @@ public class HCSOracle implements Runnable {
         this.accountId = AccountId.fromString(yamlConfigManager.getTreasuryAccount());
         this.topicId = TopicId.fromString(yamlConfigManager.getTopicId());
         this.tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
-
+        this.nftTokenId = TokenId.fromString(yamlConfigManager.getNftTokenId());
         this.minEpochReports = yamlConfigManager.getOracleMinEpochReports();
         this.epochSeconds = yamlConfigManager.getOracleEpochSeconds();
         this.minWitnessReports = yamlConfigManager.getOracleMinWitnessReports();
@@ -108,6 +110,7 @@ public class HCSOracle implements Runnable {
                 yamlHotspot.setName(jsonReport.getString(JsonConstants.NAME));
                 yamlHotspot.setPaidAccounts(jsonReport.getJsonArray(JsonConstants.PAID_ACCOUNT_IDS).getList());
                 yamlHotspot.setAccountId(jsonReport.getString(JsonConstants.ACCOUNT_ID));
+                yamlHotspot.setNft(jsonReport.getString(JsonConstants.NFT));
 
                 hotspots.put(id, yamlHotspot);
                 List<AccountId> accountIds = new ArrayList<>();
@@ -116,6 +119,23 @@ public class HCSOracle implements Runnable {
                     accountIds.add(AccountId.fromString(accountId));
                 }
                 hotspotPaidAccountsById.put(id, accountIds);
+
+                if (! yamlHotspot.getNft().isEmpty()) {
+                    // mint an nft
+                    TransactionResponse response = new TokenMintTransaction()
+                            .setTokenId(this.nftTokenId)
+                            .addMetadata(yamlHotspot.getNft().getBytes(StandardCharsets.UTF_8))
+                            .execute(client);
+                    TransactionReceipt receipt = response.getReceipt(client);
+
+                    NftId nftId = new NftId(tokenId, receipt.serials.get(0));
+
+                    // transfer to hotspot
+                    response = new TransferTransaction()
+                            .addNftTransfer(nftId, accountId, AccountId.fromString(yamlHotspot.getAccountId()))
+                            .execute(client);
+                    response.getReceipt(client);
+                }
             } else {
                 Instant reportTimestamp = message.consensusTimestamp;
                 //TODO: calculate epoch properly
@@ -147,8 +167,6 @@ public class HCSOracle implements Runnable {
                                 log.error(e);
                             }
                             log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
-                        } else if (beaconCount >= minEpochReports) {
-                            log.info("!!! Epoch ({}) Hotspot {}({}) did not beacon sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), beaconCount, minEpochReports);
                         } else {
                             try {
                                 log.info("!!! Epoch ({}) Hotspot {}({}) was not witnessed sufficiently ({} of {})", currentEpoch, hotspots.get(reports.getKey()).getName(), reports.getKey(), witnessCount, minWitnessReports);

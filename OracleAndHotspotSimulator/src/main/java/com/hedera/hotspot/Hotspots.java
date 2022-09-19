@@ -71,7 +71,7 @@ public final class Hotspots {
             }
         }
     }
-    public String add(String name, String key) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, FileNotFoundException {
+    public String add(String name, String key, String nft) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, FileNotFoundException {
         Client client = Client.forName(secrets.network());
         client.setOperator(secrets.accountId(), secrets.privateKey());
         // create account
@@ -88,7 +88,8 @@ public final class Hotspots {
         YamlHotspot yamlHotspot = new YamlHotspot();
         yamlHotspot.setAccountId(receipt.accountId.toString());
         yamlHotspot.setPrivateKey(key);
-        int maxId = ids.get(ids.size()-1);
+        yamlHotspot.setNft(nft);
+        int maxId = ids.get(ids.size()-1) + 1;
         if (maxId < yamlConfigManager.getHotspots().size()) {
             maxId = yamlConfigManager.getHotspots().size();
         }
@@ -141,9 +142,10 @@ public final class Hotspots {
         PrivateKey privateKey = PrivateKey.fromString(hotspot.getPrivateKey());
         AccountId accountId = AccountId.fromString(hotspot.getAccountId());
         String name = hotspot.getName();
+        String nft = hotspot.getNft();
         List<String> paidAccounts = hotspot.getPaidAccounts();
 
-        Hotspot hotspotInstance = new Hotspot(id, name, topicId, privateKey, accountId, network, paidAccounts, this.configuredHotspotCount, this);
+        Hotspot hotspotInstance = new Hotspot(id, name, topicId, privateKey, accountId, network, paidAccounts, this.configuredHotspotCount, this, nft);
         hotspotInstance.setIntervalMs(this.interval);
         Thread thread = new Thread(hotspotInstance);
         thread.start();
@@ -161,6 +163,7 @@ public final class Hotspots {
             hotspotJson.put("name", hotspot.getValue().getName());
             hotspotJson.put("enabled", false);
             hotspotJson.put("accountId", hotspot.getValue().getAccountId());
+            hotspotJson.put("nft", hotspot.getValue().getNft());
             if (hotspot.getValue().getPaidAccounts().size() == 0) {
                 JsonArray paidAccounts = new JsonArray();
                 paidAccounts.add(hotspot.getValue().getAccountId());

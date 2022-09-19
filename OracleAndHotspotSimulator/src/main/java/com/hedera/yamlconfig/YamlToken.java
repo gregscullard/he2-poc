@@ -2,6 +2,7 @@ package com.hedera.yamlconfig;
 
 public class YamlToken {
     private String tokenId = "";
+    private String nftTokenId = "";
     private String treasuryAccount = "";
     private String treasuryAccountKey = "";
 
@@ -11,6 +12,13 @@ public class YamlToken {
 
     public void setTokenId(String tokenId) {
         this.tokenId = tokenId;
+    }
+
+    public String getNftTokenId() {
+        return this.nftTokenId;
+    }
+    public void setNftTokenId(String tokenId) {
+        this.nftTokenId = tokenId;
     }
 
     public String getTreasuryAccount() {

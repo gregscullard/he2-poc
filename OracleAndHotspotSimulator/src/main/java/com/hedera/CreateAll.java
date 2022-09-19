@@ -14,8 +14,7 @@ public class CreateAll {
         System.exit(0);
     }
     public void create() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        CreateToken createToken = new CreateToken();
-        createToken.create("HH", "HH");
+        new CreateToken();
         CreateTopic createTopic = new CreateTopic();
         createTopic.create();
         CreateTreasuryAccount createTreasuryAccount = new CreateTreasuryAccount();

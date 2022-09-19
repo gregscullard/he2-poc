@@ -83,7 +83,7 @@ public class ApiVerticle extends AbstractVerticle {
                 .handler(authenticationHandler)
                 .handler(putHotspotsIntervalHandler);
 
-        router.post("/api/v1/hotspots/:name/:key")
+        router.post("/api/v1/hotspots/:name/:key/:nft")
                 .handler(authenticationHandler)
                 .handler(postHotspotsHandler);
 

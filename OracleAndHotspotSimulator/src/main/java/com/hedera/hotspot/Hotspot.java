@@ -30,8 +30,9 @@ public class Hotspot implements Runnable {
     private final Hotspots hotspots;
     private final Random random;
     private final int configuredHotspots;
+    private final String nft;
 
-    public Hotspot(int id, String name, TopicId topicId, PrivateKey privateKey, AccountId accountId, String network, List<String> paidAccounts, int configuredHotspots, Hotspots hotspots) throws FileNotFoundException, PrecheckStatusException, TimeoutException {
+    public Hotspot(int id, String name, TopicId topicId, PrivateKey privateKey, AccountId accountId, String network, List<String> paidAccounts, int configuredHotspots, Hotspots hotspots, String nft) throws FileNotFoundException, PrecheckStatusException, TimeoutException {
         this.hotspots = hotspots;
         this.id = id;
         this.topicId = topicId;
@@ -40,6 +41,7 @@ public class Hotspot implements Runnable {
         this.network = network;
         this.random = new Random();
         this.configuredHotspots = configuredHotspots;
+        this.nft = nft;
 
         // advertise yourself on HCS
         Client client = Client.forName(network);
@@ -64,6 +66,7 @@ public class Hotspot implements Runnable {
         jsonReport.put(JsonConstants.ACCOUNT_ID, this.accountId.toString());
         jsonReport.put(JsonConstants.NAME, name);
         jsonReport.put(JsonConstants.PAID_ACCOUNT_IDS, paidAccounts);
+        jsonReport.put(JsonConstants.NFT, nft);
         JsonObject json = JsonObject.mapFrom(jsonReport);
         new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)

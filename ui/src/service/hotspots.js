@@ -12,8 +12,8 @@ export async function apiGetHotspotBeaconReports(id) {
     return response.data;
 }
 
-export async function apiAddHotspot(name, key) {
-    axios.post(`${serverUrl}/hotspots/${name}/${key}`, {}, {
+export async function apiAddHotspot(name, key, nft) {
+    axios.post(`${serverUrl}/hotspots/${name}/${key}/${nft}`, {}, {
         headers: {
             'x-api-key': xApiKey
         }

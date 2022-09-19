@@ -44,10 +44,11 @@ public class CreateHotspotAccounts {
 
             YamlHotspot yamlHotspot = new YamlHotspot(
                     i,
-                    names[i],
+                    names[i-1],
                     accountId,
                     accountKey.toString(),
-                    paidAccounts);
+                    paidAccounts,
+                    "nftBlack.png");
             hotspotList.add(yamlHotspot);
         }
 

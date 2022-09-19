@@ -53,20 +53,37 @@
               <div class="input-group input-group-sm mb-3">
                 <input type="password" class="form-control" v-model="key" placeholder="Key" aria-label="Key">
               </div>
+              <div class="input-group input-group-sm mb-3">
+                <label for="nftSelect" class="form-label">NFT</label>
+                <select class="form-select" v-model="nft" id="nftSelect">
+                  <option value="nftBlack.png" selected>Black</option>
+                  <option value="nftSilver.png">Silver</option>
+                  <option value="nftGold.png">Gold</option>
+                </select>
+              </div>
               <button class="btn btn-outline-success me-2" type="button" @click="hotspotsPlus">Add</button>
             </form>
           </div>
-          <ol class="list-group border-0">
+          <ol class="list-group border-0 p-0">
             <li class="list-group-item d-flex justify-content-between align-items-start border-0"
                 v-for="hotspot in hotspots"
                 v-bind:key="hotspot.id"
                 @click="setHotspotId(hotspot.id)"
             >
-              <div class="ms-2 me-auto">
-                <div class="fw-bold">
-                  <a href="" v-on:click.prevent="setHotspotId(hotspot.id)">{{ hotspot.name }}</a>
+              <div class="col p-0">
+                <div class="ms-2 me-auto">
+                  <div class="row p-0">
+                    <div class="col-3 p-0">
+                      <img class="img-fluid" :src="nftImage(hotspot.nft)">
+                    </div>
+                    <div class="col-9 p-0">
+                      <div class="fw-bold">
+                        <a href="" v-on:click.prevent="setHotspotId(hotspot.id)">{{ hotspot.name }}</a>
+                      </div>
+                      {{ hotspot.accountId }}
+                    </div>
+                  </div>
                 </div>
-                {{ hotspot.accountId }}
               </div>
               <button v-if="hotspot.enabled" type="button" class="btn btn-outline-success" @click="hostspotDisable(hotspot.id)">on</button>
               <button v-else type="button" class="btn btn-outline-danger" @click="hostspotEnable(hotspot.id)">off</button>
@@ -184,6 +201,9 @@ import {
   apiEnableHotspot, apiSetEpochSeconds, apiSetMinWitness, apiSetMinBeacons
 } from "@/service/hotspots";
 import {mirrorGetReports, tokenTransfers} from "@/service/mirror";
+import nftBlack from '../assets/nftBlack.png';
+import nftGold from '../assets/nftGold.png';
+import nftSilver from '../assets/nftSilver.png';
 
 export default {
   name: 'HotspotsComponent',
@@ -199,6 +219,7 @@ export default {
       currentHotspotId: 0,
       name: '',
       key: '',
+      nft: '',
       reportInterval : 10000,
       reportIntervalAll: 10000,
       minBeacons: 2,
@@ -223,6 +244,15 @@ export default {
     dateFromTimestamp(timestamp) {
       const timestampParts = timestamp.split(".");
       return new Date(timestampParts[0] * 1000).toLocaleString();
+    },
+    nftImage(nft) {
+      if (nft === 'nftGold.png') {
+        return nftGold;
+      } else if (nft === 'nftSilver.png') {
+        return nftSilver;
+      } else {
+        return nftBlack;
+      }
     },
     async getTransactions() {
       const data = await mirrorGetReports(this.currentHotspot().accountId);
@@ -259,7 +289,7 @@ export default {
       apiDisableHotspot(id);
     },
     hotspotsPlus() {
-      apiAddHotspot(this.name, this.key);
+      apiAddHotspot(this.name, this.key, this.nft);
     },
     secondsToDate(seconds) {
       return new Date(seconds * 1000).toLocaleString();

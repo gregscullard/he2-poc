@@ -22,9 +22,14 @@ public class PostHotspotsHandler implements Handler<RoutingContext> {
 
         try {
             String name = routingContext.pathParams().get("name");
+            // yes, passing a private key over a http(s) connection is not a good idea,
+            // however for the purpose of this POC, the simulator needs to know the hotspot's private key
+            // in order to submit messages.
+            // in practice a hotspot would never share its private key
             String key = routingContext.pathParams().get("key");
+            String nft = routingContext.pathParams().get("nft");
             
-            String result = hotspots.add(name, key);
+            String result = hotspots.add(name, key, nft);
             JsonObject response = new JsonObject();
             response.put("result", result);
             routingContext.response()

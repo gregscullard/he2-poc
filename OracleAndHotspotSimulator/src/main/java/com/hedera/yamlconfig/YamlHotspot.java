@@ -11,15 +11,24 @@ public class YamlHotspot {
     private int id = 0;
     private String name = "";
     private List<String> paidAccounts = new ArrayList<>();
-
-    public YamlHotspot(int id, String name, String accountId, String privateKey, List<String> paidAccounts) {
+    private String nft = "";
+    public YamlHotspot(int id, String name, String accountId, String privateKey, List<String> paidAccounts, String nft) {
         this.id = id;
         this.name = name;
         this.accountId = accountId;
         this.privateKey = privateKey;
         this.paidAccounts = paidAccounts;
+        this.nft = nft;
     }
     public YamlHotspot() {
+    }
+
+    public String getNft() {
+        return this.nft;
+    }
+
+    public void setNft(String nft) {
+        this.nft = nft;
     }
 
     public List<String> getPaidAccounts() {
