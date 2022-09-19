@@ -7,10 +7,10 @@
             Controls
           </div>
           <div class="card-body">
-            <div v-if="currentHotspot()">
-              <div class="input-group mb-3 form-floating" v-if="currentHotspot().enabled">
+            <div v-if="selectedHotspot">
+              <div class="input-group mb-3 form-floating" v-if="selectedHotspot.enabled">
                 <input v-model="reportInterval" type="number" class="form-control" id="reportInterval" aria-describedby="btnReportInterval">
-                <label for="reportInterval">Report interval ({{ currentHotspot().name }})</label>
+                <label for="reportInterval">Report interval ({{ selectedHotspot.name }})</label>
                 <button @click="setReportInterval" class="btn btn-outline-secondary" type="button" id="btnReportInterval">Apply</button>
               </div>
             </div>
@@ -93,24 +93,26 @@
       </div>
       <div class="col-6">
         <div class="card">
-          <BeaconChartComponent :hotspotId="currentHotspotId"/>
+          <BeaconChartComponent :hotspotId="selectedHotspotId"/>
         </div>
         <div class="row">
           <div class="col">
-            <div v-if="currentHotspot()" class="card">
-              <h5 class="card-title">{{ currentHotspot().name }}</h5>
+            <div v-if="selectedHotspot" class="card">
+              <h5 class="card-title">{{ selectedHotspot.name }}</h5>
               <p class="card-text">
-                Paid accounts: {{ currentHotspot().paidAccounts }}
+                Paid accounts: {{ selectedHotspot.paidAccounts }}
               </p>
-              <div v-if="currentHotspot().runData">
+              <div v-if="selectedHotspot.runData">
                 <p class="card-text">
-                  Started: {{ secondsToDate(currentHotspot().runData.startSeconds) }}
+                  Started: {{ secondsToDate(selectedHotspot.runData.startSeconds) }}
                   <br>
-                  Running for: {{ currentHotspot().runData.runSeconds }}s
+                  Running for: {{ selectedHotspot.runData.runSeconds }}s
                   <br>
-                  Beaconed: {{ currentHotspot().runData.reportCount }} times
+                  Beaconed/witnessed: {{ selectedHotspot.runData.reportCount }} times
                   <br>
-                  Reporting every: {{ currentHotspot().runData.intervalMs }}ms
+                  Reports/s: {{ reportsPerSecond() }}
+                  <br>
+                  Reporting every: {{ selectedHotspot.runData.intervalMs }}ms
                 </p>
               </div>
               <div v-else>
@@ -121,11 +123,11 @@
         </div>
       </div>
     </div>
-    <div class="row" v-if="currentHotspot()">
+    <div class="row" v-if="selectedHotspot">
       <div class="col">
       <div class="card">
         <div class="card-header">
-          On ledger Transactions for {{ currentHotspot().name }} (beacons and witness reports)
+          On ledger Transactions for {{ selectedHotspot.name }} (beacons and witness reports)
         </div>
         <div class="card-body">
           <table class="table table-striped table-hover border-1">
@@ -153,11 +155,11 @@
       </div>
       </div>
     </div>
-    <div class="row" v-if="currentHotspot()">
+    <div class="row" v-if="selectedHotspot">
       <div class="col">
         <div class="card">
           <div class="card-header">
-            Token receipts for {{ currentHotspot().name }}
+            Token receipts for {{ selectedHotspot.name }}
           </div>
           <div class="card-body">
             <table class="table table-striped table-hover border-1">
@@ -198,7 +200,7 @@ import {
   apiSetReportInterval,
   apiSetReportIntervalAll,
   apiDisableHotspot,
-  apiEnableHotspot, apiSetEpochSeconds, apiSetMinWitness, apiSetMinBeacons
+  apiEnableHotspot, apiSetEpochSeconds, apiSetMinWitness, apiSetMinBeacons, apiGetHotspots
 } from "@/service/hotspots";
 import {mirrorGetReports, tokenTransfers} from "@/service/mirror";
 import nftBlack from '../assets/nftBlack.png';
@@ -210,13 +212,12 @@ export default {
   components: {
     BeaconChartComponent
   },
-  props: [
-    'hotspots'
-  ],
+  props: [],
   data() {
     return {
       beaconReports: {},
-      currentHotspotId: 0,
+      selectedHotspotId: 1,
+      selectedHotspot: null,
       name: '',
       key: '',
       nft: '',
@@ -227,12 +228,18 @@ export default {
       epochSeconds: 10,
       transactions: [],
       interval: null,
-      transfers: []
+      transfers: [],
+      hotspots: []
     };
   },
   async mounted() {
+    await this.getHotspotsList();
+    await this.getTransactions();
+    this.setHotspotId(this.selectedHotspotId);
+
     this.interval = setInterval(() => {
       this.getTransactions();
+      this.getHotspotsList();
     }, 2000);
   },
   beforeUnmount() {
@@ -241,6 +248,14 @@ export default {
     }
   },
   methods: {
+    reportsPerSecond() {
+      return this.selectedHotspot.runData.reportCount / this.selectedHotspot.runData.runSeconds;
+    },
+    async getHotspotsList() {
+      const newHotspots = await apiGetHotspots();
+      this.hotspots = newHotspots.hotspots;
+      this.setHotspotId(this.selectedHotspotId);
+    },
     dateFromTimestamp(timestamp) {
       const timestampParts = timestamp.split(".");
       return new Date(timestampParts[0] * 1000).toLocaleString();
@@ -255,32 +270,40 @@ export default {
       }
     },
     async getTransactions() {
-      const data = await mirrorGetReports(this.currentHotspot().accountId);
-      this.transactions = data.transactions;
+      if (this.selectedHotspot) {
+        const data = await mirrorGetReports(this.selectedHotspot.accountId);
+        this.transactions = data.transactions;
 
-      const transferResponse = await tokenTransfers(this.currentHotspot().accountId);
-      const reducedResponse = [];
-      transferResponse.transactions.forEach(transaction => {
-        const oneTransfer = {};
-        oneTransfer.consensus_timestamp = this.dateFromTimestamp(transaction.consensus_timestamp);
-        oneTransfer.transaction_id = transaction.transaction_id;
-        oneTransfer.result = transaction.result;
-        const tokenTransfers = transaction.token_transfers;
-        tokenTransfers.forEach(transfer => {
-          if (transfer.account == this.currentHotspot().accountId) {
-            oneTransfer.token_id = transfer.token_id;
-            oneTransfer.amount = transfer.amount;
+        const transferResponse = await tokenTransfers(this.selectedHotspot.accountId);
+        const reducedResponse = [];
+        transferResponse.transactions.forEach(transaction => {
+          if (transaction.token_transfers) {
+            const tokenTransfers = transaction.token_transfers;
+            const oneTransfer = {};
+            oneTransfer.consensus_timestamp = this.dateFromTimestamp(transaction.consensus_timestamp);
+            oneTransfer.transaction_id = transaction.transaction_id;
+            oneTransfer.result = transaction.result;
+
+            tokenTransfers.forEach(transfer => {
+              if (transfer.account == this.selectedHotspot.accountId) {
+                oneTransfer.token_id = transfer.token_id;
+                oneTransfer.amount = transfer.amount;
+              }
+            });
+            reducedResponse.push(oneTransfer);
           }
         });
-        reducedResponse.push(oneTransfer);
-      });
 
-      this.transfers = reducedResponse;
+        this.transfers = reducedResponse;
+      } else {
+        this.transfers = [];
+        this.transactions = [];
+      }
     },
     setHotspotId(id) {
-      console.log(`Setting id to ${id}`);
-      this.currentHotspotId = id;
+      this.selectedHotspotId = id;
       this.transactions = [];
+      this.selectedHotspot = this.hotspots.find(el => el.id === this.selectedHotspotId);
     },
     hostspotEnable(id) {
       apiEnableHotspot(id);
@@ -294,13 +317,8 @@ export default {
     secondsToDate(seconds) {
       return new Date(seconds * 1000).toLocaleString();
     },
-    currentHotspot() {
-      // return this.hotspots.at(this.currentHotspotId);
-      const object = this.hotspots.find(el => el.id === this.currentHotspotId);
-      return object;
-    },
     async setReportInterval() {
-      await apiSetReportInterval(this.currentHotspotId, this.reportInterval);
+      await apiSetReportInterval(this.selectedHotspotId, this.reportInterval);
     },
     async setReportIntervalAll() {
       await apiSetReportIntervalAll(this.reportIntervalAll);
@@ -314,13 +332,9 @@ export default {
     async setEpochSeconds() {
       await apiSetEpochSeconds(this.epochSeconds);
     },
-    concatAccountAndtoken(tokenTransfer) {
-      return `${tokenTransfer.token_id}-${tokenTransfer.account}`;
-    }
-
   },
   computed: {
-  },
+  }
 }
 </script>
 

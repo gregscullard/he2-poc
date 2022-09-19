@@ -14,11 +14,11 @@ public class CreateAll {
         System.exit(0);
     }
     public void create() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        new CreateToken();
         CreateTopic createTopic = new CreateTopic();
         createTopic.create();
         CreateTreasuryAccount createTreasuryAccount = new CreateTreasuryAccount();
         createTreasuryAccount.create();
+        new CreateToken();
         CreateHotspotAccounts createHotspotAccounts = new CreateHotspotAccounts();
         createHotspotAccounts.create();
     }

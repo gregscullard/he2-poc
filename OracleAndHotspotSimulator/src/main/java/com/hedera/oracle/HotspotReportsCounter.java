@@ -5,6 +5,7 @@ public class HotspotReportsCounter {
     private int witnessCount = 0;
     private final long epochStartSeconds;
     private long rewardPaid = 0;
+    private long partialRewardPaid = 0;
 
     public HotspotReportsCounter(long epochStartSeconds) {
         this.epochStartSeconds = epochStartSeconds;
@@ -18,8 +19,14 @@ public class HotspotReportsCounter {
         return rewardPaid;
     }
 
+    public long getPartialRewardPaid() {return partialRewardPaid;}
+
     public void setRewardPaid(long rewardPaid) {
         this.rewardPaid = rewardPaid;
+    }
+
+    public void setPartialRewardPaid(long partialRewardPaid) {
+        this.partialRewardPaid = partialRewardPaid;
     }
 
     public int getBeaconCount() {

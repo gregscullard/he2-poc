@@ -106,7 +106,12 @@ public final class Hotspots {
     public String disable(int id) {
         if (threadMap.containsKey(id)) {
             threadMap.get(id).stop();
-            enabledIds.remove(id);
+            for (int i=0; i < enabledIds.size(); i++) {
+                if (enabledIds.get(i) == id) {
+                    enabledIds.remove(i);
+                    break;
+                }
+            }
             threadMap.remove(id);
             return "success";
         } else {

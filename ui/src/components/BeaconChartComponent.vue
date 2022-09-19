@@ -98,17 +98,24 @@ export default {
       let witnesses = [];
       let beacons = [];
       let beaconsPaid = [];
+      let partialBeaconsPaid = [];
       const keys = Object.keys(newData.reports);
       for (let i = 0; i < keys.length; i++) {
         const report = newData.reports[keys[i]];
 
         labels.push(new Date(report.epochStartSeconds * 1000).toLocaleTimeString());
         witnesses.push(report.witnessCount);
-        if (report.rewardPaid) {
+        if (report.partialRewardPaid !== 0) {
           beacons.push(0);
+          partialBeaconsPaid.push(report.partialRewardPaid);
+          beaconsPaid.push(0);
+        } else if (report.rewardPaid !== 0) {
+          beacons.push(0);
+          partialBeaconsPaid.push(0);
           beaconsPaid.push(report.beaconCount);
         } else {
           beacons.push(report.beaconCount);
+          partialBeaconsPaid.push(0);
           beaconsPaid.push(0);
         }
       }
@@ -117,7 +124,8 @@ export default {
         labels: labels,
         datasets: [
           {type: 'bar', label: '# of Beacon Reports', data: beacons, backgroundColor: 'rgba(54, 162, 235, 0.2)'},
-          {type: 'bar', label: 'Paid Beacon Reports', data: beaconsPaid, backgroundColor: 'rgba(140,19,229,0.2)'},
+          {type: 'bar', label: 'Paid witnessed Reports', data: beaconsPaid, backgroundColor: 'rgba(140,19,229,0.2)'},
+          {type: 'bar', label: 'Paid beacon Reports', data: partialBeaconsPaid, backgroundColor: 'rgba(229,194,19,0.2)'},
           {type: 'bar', label: '# of Witness Reports', data: witnesses, backgroundColor: 'rgba(16,220,74,0.2)'},
         ]
       };
@@ -129,7 +137,6 @@ export default {
     },
     async refresh() {
       await this.hotspotBeaconReports();
-      console.log(`refreshing ${this.refresh}`);
     }
   }
 

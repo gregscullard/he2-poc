@@ -7,18 +7,17 @@
       </a>
     </div>
     <div class="container-fluid justify-content-end">
-      <button class="btn btn-outline-success me-2" type="button" @click="getHotspotsList">refresh</button>
+      <button class="btn btn-outline-success me-2" type="button">todo</button>
     </div>
   </nav>
   <div class="container">
-    <HotspotsComponent v-bind:hotspots="hotspots"/>
+    <HotspotsComponent />
   </div>
 </template>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <script>
 import HotspotsComponent from "./HotspotsComponent"
-import {apiGetHotspots} from "../service/hotspots"
 
 export default {
   name: "HeaderComponent",
@@ -27,29 +26,21 @@ export default {
   },
   data: function() {
     return {
-      hotspots: [],
-      interval: null
+      // interval: null
     };
   },
   async created() {
-    const newHotspots = await apiGetHotspots();
-    this.hotspots = newHotspots.hotspots;
-
-    this.interval = setInterval(async () => {
-      const newHotspots = await apiGetHotspots();
-      this.hotspots = newHotspots.hotspots;
-    }, 1000);
+    // this.interval = setInterval(async () => {
+    //   const newHotspots = await apiGetHotspots();
+    //   this.hotspots = newHotspots.hotspots;
+    // }, 1000);
   },
   beforeUnmount() {
-    if (this.interval) {
-      clearInterval(this.interval);
-    }
+    // if (this.interval) {
+    //   clearInterval(this.interval);
+    // }
   },
   methods: {
-    async getHotspotsList() {
-      const newHotspots = await apiGetHotspots();
-      this.hotspots = newHotspots.hotspots;
-    },
   },
 };
 </script>

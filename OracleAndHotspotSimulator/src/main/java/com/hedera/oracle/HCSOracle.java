@@ -160,7 +160,7 @@ public class HCSOracle implements Runnable {
                                 long payment = 4;
                                 rewardCount = issueBeaconReward(reports.getKey(), payment);
                                 // update the counters to show payment
-                                countersToCheck.setRewardPaid(payment);
+                                countersToCheck.setRewardPaid(beaconCount);
                                 reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
                                 hotspotReportsMap.put(reports.getKey(), reportsToCheck);
                             } catch (PrecheckStatusException | TimeoutException e) {
@@ -175,7 +175,7 @@ public class HCSOracle implements Runnable {
                                     long payment = 2;
                                     rewardCount = issueBeaconReward(reports.getKey(), payment);
                                     // update the counters to show payment
-                                    countersToCheck.setRewardPaid(payment);
+                                    countersToCheck.setPartialRewardPaid(beaconCount);
                                     reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
                                     hotspotReportsMap.put(reports.getKey(), reportsToCheck);
                                 } catch (PrecheckStatusException | TimeoutException e) {
