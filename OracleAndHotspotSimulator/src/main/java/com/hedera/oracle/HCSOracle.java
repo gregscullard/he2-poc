@@ -1,9 +1,7 @@
 package com.hedera.oracle;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.*;
-import com.hedera.proto.Hotspot;
-import com.hedera.proto.Report;
+import com.hedera.json.JsonConstants;
 import com.hedera.yamlconfig.YamlConfigManager;
 import com.hedera.yamlconfig.YamlHotspot;
 import io.vertx.core.json.JsonObject;
@@ -23,28 +21,25 @@ import java.util.function.Predicate;
 public class HCSOracle implements Runnable {
     // thread management
     private boolean doStop = false;
-    private final PrivateKey privateKey;
     private final AccountId accountId;
-    private final String network;
     private final TopicId topicId;
     private final Client client;
 
     private final TokenId tokenId;
 
-    private long epochSeconds = 10;
-    private int minEpochReports = 2;
+    private long epochSeconds;
+    private int minEpochReports;
     private int minWitnessReports;
     ConcurrentHashMap<Integer, HotspotReports> hotspotReportsMap = new ConcurrentHashMap<>();
     long currentEpoch = 0;
     long currentEpochStart = 0;
-    private  Map<Integer, List<AccountId>> hotspotPaidAccountsById = new HashMap<>();
-    private Map<Integer, YamlHotspot> hotspots = new HashMap<>();
+    private final Map<Integer, List<AccountId>> hotspotPaidAccountsById = new HashMap<>();
+    private final Map<Integer, YamlHotspot> hotspots = new HashMap<>();
 
     // Hedera client
-    public HCSOracle(YamlConfigManager yamlConfigManager, String network) throws Exception {
-        this.privateKey = PrivateKey.fromString(yamlConfigManager.getTreasuryAccountKey());
+    public HCSOracle(YamlConfigManager yamlConfigManager, String network) {
+        PrivateKey privateKey = PrivateKey.fromString(yamlConfigManager.getTreasuryAccountKey());
         this.accountId = AccountId.fromString(yamlConfigManager.getTreasuryAccount());
-        this.network = network;
         this.topicId = TopicId.fromString(yamlConfigManager.getTopicId());
         this.tokenId = TokenId.fromString(yamlConfigManager.getTokenId());
 
@@ -52,7 +47,7 @@ public class HCSOracle implements Runnable {
         this.epochSeconds = yamlConfigManager.getOracleEpochSeconds();
         this.minWitnessReports = yamlConfigManager.getOracleMinWitnessReports();
 
-        this.client = Client.forName(this.network);
+        this.client = Client.forName(network);
         this.client.setOperator(accountId, privateKey);
         this.client.setMaxNodeAttempts(1);
         this.client.setMaxAttempts(1);
@@ -63,7 +58,7 @@ public class HCSOracle implements Runnable {
     }
 
     private synchronized boolean keepRunning() {
-        return this.doStop == false;
+        return !this.doStop;
     }
 
     public void run() {
@@ -71,9 +66,7 @@ public class HCSOracle implements Runnable {
 
         CompletionHandler completionHandler = new CompletionHandler();
 
-        BiConsumer<Throwable, TopicMessage> errorHandler = (error, message) -> {
-            log.error(error);
-        };
+        BiConsumer<Throwable, TopicMessage> errorHandler = (error, message) -> log.error(error);
 
         Predicate<Throwable> retryHandler = (error) -> {
             log.info("Retry Handler invoked");
@@ -87,39 +80,43 @@ public class HCSOracle implements Runnable {
                 .setCompletionHandler(completionHandler)
                 .setErrorHandler(errorHandler)
                 .setRetryHandler(retryHandler)
-                .subscribe(client, message -> {
-                    this.messageHandler(message);
-                });
+                .subscribe(client, this::messageHandler);
     }
 
     // handles reports
-    // counts number of reports by each hotspots in an "epoch"
+    // counts the number of reports by each hotspot in an "epoch"
     // if the reports in the epoch are >= minEpochReports, a reward is paid
     // for example, if the epoch is 1 day and minEpochReports is 24, then
     // a reward would be paid if the hotspot sent a report more than 24 times.
     private void messageHandler(TopicMessage message) {
 //        log.debug("Got HCS Message");
         try {
+            String report = new String(message.contents);
+            JsonObject jsonReport = new JsonObject(report);
+//            Report report = Report.parseFrom(message.contents);
 
-            Report report = Report.parseFrom(message.contents);
-
-            if (report.hasHotspot()) {
+//            if (report.hasHotspot()) {
+            if (jsonReport.containsKey(JsonConstants.ACCOUNT_ID)) {
                 YamlHotspot yamlHotspot = new YamlHotspot();
-                Hotspot hotspotProto = report.getHotspot();
-                int id = hotspotProto.getId();
+//                Hotspot hotspotProto = report.getHotspot();
+//                int id = hotspotProto.getId();
+                int id = jsonReport.getInteger(JsonConstants.ID);
                 yamlHotspot.setId(id);
-                yamlHotspot.setName(hotspotProto.getName());
-                yamlHotspot.setPaidAccounts(hotspotProto.getAccountIdsList());
-                yamlHotspot.setAccountId(hotspotProto.getAccountId());
+//                yamlHotspot.setName(hotspotProto.getName());
+//                yamlHotspot.setPaidAccounts(hotspotProto.getAccountIdsList());
+//                yamlHotspot.setAccountId(hotspotProto.getAccountId());
+                yamlHotspot.setName(jsonReport.getString(JsonConstants.NAME));
+                yamlHotspot.setPaidAccounts(jsonReport.getJsonArray(JsonConstants.PAID_ACCOUNT_IDS).getList());
+                yamlHotspot.setAccountId(jsonReport.getString(JsonConstants.ACCOUNT_ID));
 
                 hotspots.put(id, yamlHotspot);
                 List<AccountId> accountIds = new ArrayList<>();
-                for (String accountId : hotspotProto.getAccountIdsList()) {
+//                for (String accountId : hotspotProto.getAccountIdsList()) {
+                for (String accountId : yamlHotspot.getPaidAccounts()) {
                     accountIds.add(AccountId.fromString(accountId));
                 }
                 hotspotPaidAccountsById.put(id, accountIds);
             } else {
-
                 Instant reportTimestamp = message.consensusTimestamp;
                 //TODO: calculate epoch properly
                 long timestampSeconds = reportTimestamp.getEpochSecond();
@@ -146,9 +143,7 @@ public class HCSOracle implements Runnable {
                                 countersToCheck.setRewardPaid(payment);
                                 reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
                                 hotspotReportsMap.put(reports.getKey(), reportsToCheck);
-                            } catch (PrecheckStatusException e) {
-                                log.error(e);
-                            } catch (TimeoutException e) {
+                            } catch (PrecheckStatusException | TimeoutException e) {
                                 log.error(e);
                             }
                             log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
@@ -165,9 +160,7 @@ public class HCSOracle implements Runnable {
                                     countersToCheck.setRewardPaid(payment);
                                     reportsToCheck.updateReportsCounter(currentEpoch, countersToCheck);
                                     hotspotReportsMap.put(reports.getKey(), reportsToCheck);
-                                } catch (PrecheckStatusException e) {
-                                    log.error(e);
-                                } catch (TimeoutException e) {
+                                } catch (PrecheckStatusException | TimeoutException e) {
                                     log.error(e);
                                 }
                                 log.info("*** Rewarded hotspot {}({}) via {} accounts", hotspots.get(reports.getKey()).getName(), reports.getKey(), rewardCount);
@@ -180,39 +173,44 @@ public class HCSOracle implements Runnable {
                     currentEpochStart = timestampSeconds;
                 }
 
-                int hotspotId = 0;
-                HotspotReports hotspotReports = new HotspotReports();
-                // is it a beacon report ?
-                if (report.hasBeaconReport()) {
-                    // beacon report
-                    hotspotId = report.getBeaconReport().getId();
-                    // check if there is a report already for this hotspot
-                    if (hotspotReportsMap.containsKey(hotspotId)) {
-                        hotspotReports = hotspotReportsMap.get(hotspotId);
-                    }
+                int hotspotId = jsonReport.getInteger(JsonConstants.ID);
+                if (hotspotId != 0) {
+                    HotspotReports hotspotReports = new HotspotReports();
+                    // is it a beacon report ?
+//                    if (report.hasBeaconReport()) {
+                    if (jsonReport.containsKey(JsonConstants.WITNESSED_ID)) {
+                        // witness report
+                        //                    log.debug("witness report {}", reportTimestamp.getEpochSecond());
+                        // beacon report
+//                        hotspotId = report.getWitnessReport().getWitnessedId();
+                        hotspotId = jsonReport.getInteger(JsonConstants.WITNESSED_ID);
+                        // check if there is a report already for this hotspot
+                        if (hotspotReportsMap.containsKey(hotspotId)) {
+                            hotspotReports = hotspotReportsMap.get(hotspotId);
+                        }
+
+                        HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
+                        hotspotReportsCounter.addWitnessCount();
+                        hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
+                        hotspotReportsMap.put(hotspotId, hotspotReports);
+                    } else {
+                        // beacon report
+                        // check if there is a report already for this hotspot
+                        if (hotspotReportsMap.containsKey(hotspotId)) {
+                            hotspotReports = hotspotReportsMap.get(hotspotId);
+                        }
 
 //                    log.debug("beacon report {}", reportTimestamp.getEpochSecond());
-                    HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
-                    hotspotReportsCounter.addBeaconCount();
-                    hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
-                    hotspotReportsMap.put(hotspotId, hotspotReports);
-                } else if (report.hasWitnessReport()) {
-                    // witness report
-//                    log.debug("witness report {}", reportTimestamp.getEpochSecond());
-                    // beacon report
-                    hotspotId = report.getWitnessReport().getWitnessedId();
-                    // check if there is a report already for this hotspot
-                    if (hotspotReportsMap.containsKey(hotspotId)) {
-                        hotspotReports = hotspotReportsMap.get(hotspotId);
+                        HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
+                        hotspotReportsCounter.addBeaconCount();
+                        hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
+                        hotspotReportsMap.put(hotspotId, hotspotReports);
                     }
-
-                    HotspotReportsCounter hotspotReportsCounter = hotspotReports.getReportByEpoch(reportEpoch, currentEpochStart);
-                    hotspotReportsCounter.addWitnessCount();
-                    hotspotReports.updateReportsCounter(reportEpoch, hotspotReportsCounter);
-                    hotspotReportsMap.put(hotspotId, hotspotReports);
                 }
             }
-        } catch (InvalidProtocolBufferException e) {
+//        } catch (InvalidProtocolBufferException e) {
+//            log.error(e);
+        } catch (Exception e) {
             log.error(e);
         }
     }

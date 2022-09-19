@@ -4,6 +4,7 @@
 
 * Java 14
 * Node v16.17.0
+* Hedera testnet (or mainnet/previewnet) account
 
 ## Install and operate the Backend
 

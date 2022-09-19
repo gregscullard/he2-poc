@@ -7,7 +7,7 @@
             Controls
           </div>
           <div class="card-body">
-            <div  v-if="currentHotspot()">
+            <div v-if="currentHotspot()">
               <div class="input-group mb-3 form-floating" v-if="currentHotspot().enabled">
                 <input v-model="reportInterval" type="number" class="form-control" id="reportInterval" aria-describedby="btnReportInterval">
                 <label for="reportInterval">Report interval ({{ currentHotspot().name }})</label>
@@ -265,7 +265,9 @@ export default {
       return new Date(seconds * 1000).toLocaleString();
     },
     currentHotspot() {
-      return this.hotspots.at(this.currentHotspotId);
+      // return this.hotspots.at(this.currentHotspotId);
+      const object = this.hotspots.find(el => el.id === this.currentHotspotId);
+      return object;
     },
     async setReportInterval() {
       await apiSetReportInterval(this.currentHotspotId, this.reportInterval);

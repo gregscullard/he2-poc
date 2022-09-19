@@ -30,13 +30,13 @@ public class CreateHotspotAccounts {
         long initialBalance = yamlConfigManager.getInitialHotspotBalance();
 
         String[] names = {"London", "Paris", "New York"};
-        for (int i=0; i < 3; i++) {
+        for (int i=1; i < 4; i++) {
             List<String> paidAccounts = new ArrayList<>();
 
             PrivateKey accountKey = PrivateKey.generateED25519();
             String accountId = createAccount(client, accountKey, initialBalance);
 
-            if (i == 1) {
+            if (i == 2) {
                 String otherAccount = createAccount(client, accountKey, initialBalance);
                 paidAccounts.add(otherAccount);
                 paidAccounts.add(accountId);

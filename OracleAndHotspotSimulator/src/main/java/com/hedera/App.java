@@ -59,7 +59,7 @@ public class App {
 
     private void startHotspots(YamlConfigManager yamlConfigManager) throws FileNotFoundException, InterruptedException, PrecheckStatusException, TimeoutException {
         int hotspotsToStart = yamlConfigManager.getHotSpotsToStart();
-        for (int i=0; i < hotspotsToStart; i++) {
+        for (int i=1; i <= hotspotsToStart; i++) {
             Threads.hotspots.startHotspot(i);
             // random delay between 1 and 3 seconds
             Random rand = new Random();

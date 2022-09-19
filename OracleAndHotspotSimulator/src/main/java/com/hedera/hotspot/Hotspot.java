@@ -1,15 +1,12 @@
 package com.hedera.hotspot;
 
 import com.hedera.hashgraph.sdk.*;
-import com.hedera.proto.BeaconReport;
-import com.hedera.proto.Report;
-import com.hedera.proto.WitnessReport;
+import com.hedera.json.JsonConstants;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.FileNotFoundException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -26,12 +23,10 @@ public class Hotspot implements Runnable {
     private final String network;
     // beacon properties
     private final int id;
-    private final String name;
     // Reporting topicId
     private final TopicId topicId;
     private long startSeconds;
     private long reportCount = 1;
-    private final List<String> paidAccounts = new ArrayList<>();
     private final Hotspots hotspots;
     private final Random random;
     private final int configuredHotspots;
@@ -39,18 +34,10 @@ public class Hotspot implements Runnable {
     public Hotspot(int id, String name, TopicId topicId, PrivateKey privateKey, AccountId accountId, String network, List<String> paidAccounts, int configuredHotspots, Hotspots hotspots) throws FileNotFoundException, PrecheckStatusException, TimeoutException {
         this.hotspots = hotspots;
         this.id = id;
-        this.name = name;
         this.topicId = topicId;
         this.privateKey = privateKey;
         this.accountId = accountId;
         this.network = network;
-        if (paidAccounts.size() == 0) {
-            this.paidAccounts.add(this.accountId.toString());
-        } else {
-            for (String paidAccount : paidAccounts) {
-                this.paidAccounts.add(paidAccount);
-            }
-        }
         this.random = new Random();
         this.configuredHotspots = configuredHotspots;
 
@@ -58,20 +45,29 @@ public class Hotspot implements Runnable {
         Client client = Client.forName(network);
         client.setOperator(accountId, privateKey);
 
-        com.hedera.proto.Hotspot hotspot = com.hedera.proto.Hotspot.newBuilder()
-                .setId(this.id)
-                .setAccountId(this.accountId.toString())
-                .setName(this.name)
-                .addAllAccountIds(this.paidAccounts)
-                .build();
+//        com.hedera.proto.Hotspot hotspot = com.hedera.proto.Hotspot.newBuilder()
+//                .setId(this.id)
+//                .setAccountId(this.accountId.toString())
+//                .setName(name)
+//                .addAllAccountIds(paidAccounts)
+//                .build();
+//
+//        Report report = Report.newBuilder()
+//                .setHotspot(hotspot)
+//                .build();
 
-        Report report = Report.newBuilder()
-                .setHotspot(hotspot)
-                .build();
-
+        if (paidAccounts.size() == 0) {
+            paidAccounts.add(accountId.toString());
+        }
+        JsonObject jsonReport = new JsonObject();
+        jsonReport.put(JsonConstants.ID, this.id);
+        jsonReport.put(JsonConstants.ACCOUNT_ID, this.accountId.toString());
+        jsonReport.put(JsonConstants.NAME, name);
+        jsonReport.put(JsonConstants.PAID_ACCOUNT_IDS, paidAccounts);
+        JsonObject json = JsonObject.mapFrom(jsonReport);
         new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
-                .setMessage(report.toByteString())
+                .setMessage(json.encode())
                 .execute(client);
 
         client.close();
@@ -114,17 +110,19 @@ public class Hotspot implements Runnable {
             for (Map.Entry<String, AccountId> entry : nodes.entrySet()) {
                 try {
                     String reportType;
-                    Report.Builder report = Report.newBuilder();
+//                    Report.Builder report = Report.newBuilder();
+                    JsonObject jsonReport = new JsonObject();
+                    jsonReport.put(JsonConstants.ID, this.id);
                     log.debug("Enabled ids {}", this.hotspots.getEnabledIds());
                     if (beacon || (this.hotspots.getEnabledIds().size() == 1)) {
                         // beacon if alone
                         reportType = "beacon";
-                        BeaconReport beaconReport = BeaconReport.newBuilder()
-                                .setId(this.id)
-                                .setName(this.name)
-                                .build();
-                        report.setBeaconReport(beaconReport)
-                                .build();
+//                        BeaconReport beaconReport = BeaconReport.newBuilder()
+//                                .setId(this.id)
+////                                .setName(this.name)
+//                                .build();
+//                        report.setBeaconReport(beaconReport)
+//                                .build();
                         log.debug("----> Beacon {}", this.id);
                     } else {
                         // witness randomly
@@ -141,20 +139,22 @@ public class Hotspot implements Runnable {
                                 witnessedId = this.hotspots.getEnabledIds().get(hotspotIdToWitness - 1);
                             }
                         }
-                        WitnessReport witnessReport = WitnessReport.newBuilder()
-                                .setWitnessingId(this.id)
-                                .setWitnessedId(witnessedId)
-                                .build();
-                        report.setWitnessReport(witnessReport);
+                        jsonReport.put(JsonConstants.WITNESSED_ID, witnessedId);
+//                        WitnessReport witnessReport = WitnessReport.newBuilder()
+//                                .setWitnessingId(this.id)
+//                                .setWitnessedId(witnessedId)
+//                                .build();
+//                        report.setWitnessReport(witnessReport);
                         log.debug("----> Witness from {} to {}", this.id, witnessedId);
                     }
                     //TODO: Make this dynamic ?
                     beacon = !beacon;
 
+                    JsonObject json = JsonObject.mapFrom(jsonReport);
                     new TopicMessageSubmitTransaction()
                         .setNodeAccountIds(List.of(entry.getValue()))
                         .setTopicId(topicId)
-                        .setMessage(report.build().toByteString())
+                        .setMessage(json.encode())
                         .execute(client);
                     log.debug("Hotspot {} {} report #{} submitted", id, reportType, reportCount);
                     reportCount++;
@@ -168,7 +168,7 @@ public class Hotspot implements Runnable {
                     break;
                 }
                 long runSeconds = Instant.now().getEpochSecond() - this.startSeconds;
-                if ((runSeconds > 60) && (this.id > this.configuredHotspots - 1)) {
+                if ((runSeconds > 60) && (this.id > this.configuredHotspots)) {
                     // stop running after 1 minute
                     this.hotspots.remove(this.id);
                 }

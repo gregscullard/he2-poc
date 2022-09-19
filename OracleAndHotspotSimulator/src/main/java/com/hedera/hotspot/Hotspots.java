@@ -36,7 +36,7 @@ public final class Hotspots {
         this.configuredHotspotCount = yamlConfigManager.getHotspots().size();
         this.initialHotspotBalance = yamlConfigManager.getInitialHotspotBalance();
 
-        for (int i=0; i < this.hotspots.size(); i++) {
+        for (int i=1; i <= this.hotspots.size(); i++) {
             ids.add(this.hotspots.get(i).getId());
         }
     }
