@@ -1,2 +1,8 @@
 rootProject.name = 'he2-poc'
+include 'common'
+include 'hotspot'
+include 'demo'
+include 'hotspots-simulator'
+include 'oracle'
+include 'restapi'
 

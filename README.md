@@ -6,6 +6,17 @@
 * Node v16.17.0
 * Hedera testnet (or mainnet/previewnet) account
 
+## Back end architecture
+
+For re-use, the back end is modular in its construction and is made up of the following modules:
+
+* common: A common set of capabilities which include reading configuration files, secrets, etc...
+* hotspot: The definition of a hotspot which is capable of generating reports
+* oracle: The definition of an oracle which is capable of reading messages on a topic and processing them into token payments
+* restapi: A REST API to support the UI (this is dependent on demo running below)
+* hotspots-simulator: TBD, but this will just run a large number of hotspots for simulation purposes
+* demo: Automatically starts 3 hotspots, an oracle and the rest api for demonstration purposes 
+
 ## Install and operate the Backend
 
 The back end consists in hotspot simulators that generate beacon and witness reports, as well as an Oracle that processes the reports and issues tokens to hotspots meeting the beacon and witness criteria.
@@ -34,27 +45,31 @@ edit `.config.yaml`
 
 ```shell
 cd OracleAndHotspotSimulator
-./gradlew initAll 
+./gradlew :common:initAll 
 ```
 
 ### one by one
 
 ```shell
 cd OracleAndHotspotSimulator
-./gradlew initTopic 
-./gradlew initTreasury
-./gradlew initToken 
-./gradlew initHotspots 
+./gradlew :common:initTopic 
+./gradlew :common:initTreasury
+./gradlew :common:initToken 
+./gradlew :common:initHotspots 
 ```
 
-## Running the back end 
+## Running the demo
+
+The demo sets up 3 hotspots, one oracle and the rest api
 
 ```shell
 cd OracleAndHotspotSimulator
-./gradlew run 
+./gradlew :demo:run
 ```
 
 ## Install and operate the Front end
+
+__Note: Running the front end depends on running the demo back end__
 
 ```shell
 cd ui

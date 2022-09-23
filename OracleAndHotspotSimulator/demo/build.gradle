@@ -1,0 +1,23 @@
+dependencies {
+    implementation project(":hotspot")
+    implementation project(":oracle")
+    implementation project(":common")
+    implementation project(":restapi")
+    // version numbers are defined in gradle.properties
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "io.grpc:grpc-netty-shaded:$nettyVersion"
+    implementation "com.google.errorprone:error_prone_core:$errorProneVersion"
+    implementation "io.vertx:vertx-web-validation:$vertxVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+}
+
+task run(type: JavaExec) {
+    group = "Execution"
+    description = "Runs the demo (3x hotspots, oracle, api)"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.demo.App"
+    args '3'
+}

@@ -1,0 +1,13 @@
+dependencies {
+    // version numbers are defined in gradle.properties
+    implementation project(":common")
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "com.google.protobuf:protobuf-javalite:$javaliteVersion"
+    implementation "io.grpc:grpc-netty-shaded:$nettyVersion"
+    implementation "io.vertx:vertx-web-validation:$vertxVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+}

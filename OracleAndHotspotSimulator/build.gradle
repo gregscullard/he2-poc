@@ -1,109 +1,18 @@
 plugins {
-    id 'java'
-    id 'com.google.protobuf' version '0.8.19'
+    id "java"
+    id "nebula.lint" version "17.6.1"
 }
 
-group 'com.hedera'
-version '1.0-SNAPSHOT'
+allprojects {
+    apply plugin: "java"
+    apply plugin: "nebula.lint"
+//    gradleLint {
+//        rules = ['unused-dependency']
+//    }
+    group "com.hedera"
+    version "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'com.google.protobuf:protobuf-javalite:3.8.0'
-
-    implementation 'com.hedera.hashgraph:sdk:2.17.3'
-    implementation 'com.google.code.gson:gson:2.8.8'
-//    implementation 'org.slf4j:slf4j-simple:2.0.0'
-    implementation 'io.grpc:grpc-netty-shaded:1.44.1'
-
-    implementation 'org.yaml:snakeyaml:1.31'
-    implementation 'io.github.cdimascio:java-dotenv:5.2.2'
-
-    implementation 'com.google.errorprone:error_prone_core:2.9.0'
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.69'
-
-    implementation 'io.vertx:vertx-core:4.1.1'
-    implementation 'io.vertx:vertx-web:4.1.1'
-    implementation 'io.vertx:vertx-web-client:4.1.1'
-    implementation 'io.vertx:vertx-web-validation:4.1.1'
-
-    implementation "org.apache.logging.log4j:log4j-core:2.14.1"
-    implementation 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor "org.projectlombok:lombok:1.18.22"
-
-    implementation "com.fasterxml.jackson.core:jackson-annotations:2.12.3"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:2.12.3"
-}
-
-sourceSets {
-    main {
-        java.srcDirs += 'build/generated/source/java'
+    repositories {
+        mavenCentral()
     }
-}
-
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:3.8.0'
-    }
-    generateProtoTasks {
-        all().each { task ->
-            task.builtins {
-                java {
-                    option 'lite'
-                }
-            }
-        }
-    }
-}
-
-task run(type: JavaExec) {
-    group = "Execution"
-    description = "Runs the application"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.App"
-}
-
-task initAll(type: JavaExec) {
-    group = "Execution"
-    description = "Initialises everything"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.CreateAll"
-}
-
-task initTopic(type: JavaExec) {
-    group = "Execution"
-    description = "Creates the HCS topic"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.CreateTopic"
-}
-
-task initTreasury(type: JavaExec) {
-    group = "Execution"
-    description = "Creates the treasury account for the token"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.CreateTreasuryAccount"
-}
-
-
-task initToken(type: JavaExec) {
-    group = "Execution"
-    description = "Creates the fungible token"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.CreateToken"
-}
-
-
-task initHotspots(type: JavaExec) {
-    group = "Execution"
-    description = "Creates accounts for hotspots"
-    classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
-    main = "com.hedera.CreateHotspotAccounts"
 }

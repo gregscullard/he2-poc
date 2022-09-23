@@ -1,4 +1,4 @@
-!!com.hedera.yamlconfig.YamlConfig
+!!com.hedera.he2poc.common.yamlconfig.YamlConfig
 api: {apiKey: api_key, apiPort: 8080, apiVerticleCount: 1, httpsCertificate: '', httpsKeyOrPass: ''}
 hotspotsSimulator: true
 hotspotsToStart: 1

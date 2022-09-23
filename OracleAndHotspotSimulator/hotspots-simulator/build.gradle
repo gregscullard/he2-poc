@@ -1,0 +1,10 @@
+dependencies {
+    implementation project(":common")
+    implementation project(":hotspot")
+    // version numbers are defined in gradle.properties
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "io.grpc:grpc-netty-shaded:$nettyVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+}

@@ -1,0 +1,78 @@
+plugins {
+    id 'com.google.protobuf' version '0.8.19'
+}
+
+dependencies {
+    // version numbers are defined in gradle.properties
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "io.grpc:grpc-netty-shaded:$nettyVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bcprovVersion"
+    implementation "org.yaml:snakeyaml:$snakeyamlVersion"
+    implementation "io.github.cdimascio:java-dotenv:$dotEnvVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+}
+
+sourceSets {
+    main {
+        java.srcDirs += 'build/generated/source/java'
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.8.0'
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}
+
+task initAll(type: JavaExec) {
+    group = "Execution"
+    description = "Initialises everything"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateAll"
+}
+
+task initTopic(type: JavaExec) {
+    group = "Execution"
+    description = "Creates the HCS topic"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateTopic"
+}
+
+task initTreasury(type: JavaExec) {
+    group = "Execution"
+    description = "Creates the treasury account for the token"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateTreasuryAccount"
+}
+
+
+task initToken(type: JavaExec) {
+    group = "Execution"
+    description = "Creates the fungible token"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateToken"
+}
+
+
+task initHotspots(type: JavaExec) {
+    group = "Execution"
+    description = "Creates accounts for hotspots"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateHotspotAccounts"
+}
