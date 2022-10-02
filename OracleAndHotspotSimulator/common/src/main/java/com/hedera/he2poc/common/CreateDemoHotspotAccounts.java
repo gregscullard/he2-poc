@@ -11,30 +11,17 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 @Log4j2
-public class CreateHotspotAccounts {
-    private static int numHotspotsToCreate = 10;
-    private static int firstHotspotId = 1;
-
+public class CreateDemoHotspotAccounts {
     public static void main(String[] args) throws PrecheckStatusException, TimeoutException, ReceiptStatusException, IOException {
-        CreateHotspotAccounts createDemoHotspotAccounts = new CreateHotspotAccounts();
-        createDemoHotspotAccounts.create(args);
+        CreateDemoHotspotAccounts createDemoHotspotAccounts = new CreateDemoHotspotAccounts();
+        createDemoHotspotAccounts.create();
         System.exit(0);
     }
-
-    public void create(String[] args) throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
+     public void create() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
         List<YamlHotspot> hotspotList = new ArrayList<>();
-        YamlConfigManager yamlConfigManager = new YamlConfigManager(false);
-
-        if (args.length != 0) {
-            hotspotList = yamlConfigManager.getHotspots();
-            firstHotspotId = hotspotList.size() + 1;
-            numHotspotsToCreate = Integer.parseInt(args[0]);
-            log.info("Adding {} hotspot accounts", numHotspotsToCreate);
-        } else {
-            log.info("Creating {} new hotspot accounts", numHotspotsToCreate);
-        }
 
         Client client = HederaClient.clientFromEnv();
+        YamlConfigManager yamlConfigManager = new YamlConfigManager(true);
 
         if (yamlConfigManager.getTokenId().isEmpty()) {
             log.error("Token details missing from config.yaml");
@@ -42,15 +29,22 @@ public class CreateHotspotAccounts {
         }
         long initialBalance = yamlConfigManager.getInitialHotspotBalance();
 
-        for (int i=0; i <= numHotspotsToCreate; i++) {
+        String[] names = {"London", "Paris", "New York"};
+        for (int i=1; i < 4; i++) {
             List<String> paidAccounts = new ArrayList<>();
 
             PrivateKey accountKey = PrivateKey.generateED25519();
             String accountId = createAccount(client, accountKey, initialBalance);
 
+            if (i == 2) {
+                String otherAccount = createAccount(client, accountKey, initialBalance);
+                paidAccounts.add(otherAccount);
+                paidAccounts.add(accountId);
+            }
+
             YamlHotspot yamlHotspot = new YamlHotspot(
-                    firstHotspotId + i,
-                    "hotspot-".concat(String.valueOf(firstHotspotId + i)),
+                    i,
+                    names[i-1],
                     accountId,
                     accountKey.toString(),
                     paidAccounts,
@@ -58,7 +52,7 @@ public class CreateHotspotAccounts {
             hotspotList.add(yamlHotspot);
         }
 
-        yamlConfigManager.setHotspots(hotspotList);
+        yamlConfigManager.setDemoHotspots(hotspotList);
         yamlConfigManager.save();
         client.close();
     }

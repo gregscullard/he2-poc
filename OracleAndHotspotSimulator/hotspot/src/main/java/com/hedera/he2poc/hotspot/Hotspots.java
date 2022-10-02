@@ -26,8 +26,8 @@ public final class Hotspots {
     private final int configuredHotspotCount;
     private final long initialHotspotBalance;
 
-    public Hotspots() throws FileNotFoundException {
-        this.yamlConfigManager = new YamlConfigManager();
+    public Hotspots(boolean demo) throws FileNotFoundException {
+        this.yamlConfigManager = new YamlConfigManager(demo);
         this.secrets = new Secrets();
         this.network = secrets.network();
         this.topicId = TopicId.fromString(yamlConfigManager.getTopicId());

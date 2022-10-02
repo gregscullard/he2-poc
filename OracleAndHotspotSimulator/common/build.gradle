@@ -39,24 +39,27 @@ task initAll(type: JavaExec) {
     group = "Execution"
     description = "Initialises everything"
     classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
     main = "com.hedera.he2poc.common.CreateAll"
+    workingDir = project.rootDir
 }
 
 task initTopic(type: JavaExec) {
     group = "Execution"
     description = "Creates the HCS topic"
     classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
     main = "com.hedera.he2poc.common.CreateTopic"
+    workingDir = project.rootDir
 }
 
 task initTreasury(type: JavaExec) {
     group = "Execution"
     description = "Creates the treasury account for the token"
     classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
     main = "com.hedera.he2poc.common.CreateTreasuryAccount"
+    workingDir = project.rootDir
 }
 
 
@@ -64,8 +67,9 @@ task initToken(type: JavaExec) {
     group = "Execution"
     description = "Creates the fungible token"
     classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
     main = "com.hedera.he2poc.common.CreateToken"
+    workingDir = project.rootDir
 }
 
 
@@ -73,6 +77,16 @@ task initHotspots(type: JavaExec) {
     group = "Execution"
     description = "Creates accounts for hotspots"
     classpath = sourceSets.main.runtimeClasspath
-    allJvmArgs = ["-Dlog4j.configurationFile=../log4j2.xml"]
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
     main = "com.hedera.he2poc.common.CreateHotspotAccounts"
+    workingDir = project.rootDir
+}
+
+task initDemoHotspots(type: JavaExec) {
+    group = "Execution"
+    description = "Creates accounts for demo hotspots"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
+    main = "com.hedera.he2poc.common.CreateDemoHotspotAccounts"
+    workingDir = project.rootDir
 }

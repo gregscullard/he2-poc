@@ -1,0 +1,25 @@
+dependencies {
+    implementation project(":common")
+    implementation project(":hotspot")
+
+    // version numbers are defined in gradle.properties
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "io.vertx:vertx-core:$vertxVersion"
+    implementation 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+    implementation "com.google.errorprone:error_prone_core:$errorProneVersion"
+    implementation "com.hedera.hashgraph:sdk:$hederaSdkVersion"
+    implementation "io.vertx:vertx-web-client:$vertxVersion"
+    implementation "io.vertx:vertx-web-validation:$vertxVersion"
+}
+
+task runOracle(type: JavaExec) {
+    group = "Execution"
+    description = "Runs the Oracle and the Rest API standalone"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
+    main = "com.hedera.he2poc.oracle.App"
+    workingDir = project.rootDir
+}

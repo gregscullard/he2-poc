@@ -22,8 +22,10 @@ public class BalanceChecker implements Runnable {
     private final Hbar hotspotThresholdAndTopup;
     private final Hbar treasuryThresholdAndTopup = new Hbar(10);
     private final YamlConfigManager yamlConfigManager;
+    private final boolean demo;
 
-    public BalanceChecker(List<AccountId> accountIds, PrivateKey privateKey, AccountId accountId, String network) throws FileNotFoundException {
+    public BalanceChecker(boolean demo, List<AccountId> accountIds, PrivateKey privateKey, AccountId accountId, String network) throws FileNotFoundException {
+        this.demo = demo;
         this.privateKey = privateKey;
         this.accountId = accountId;
         this.network = network;
@@ -34,7 +36,7 @@ public class BalanceChecker implements Runnable {
         this.client.setMaxNodeAttempts(1);
         this.client.setMaxAttempts(1);
 
-        this.yamlConfigManager = new YamlConfigManager();
+        this.yamlConfigManager = new YamlConfigManager(demo);
         this.hotspotThresholdAndTopup  = new Hbar(yamlConfigManager.getInitialHotspotBalance());
     }
 

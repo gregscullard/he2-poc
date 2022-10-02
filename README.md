@@ -12,9 +12,8 @@ For re-use, the back end is modular in its construction and is made up of the fo
 
 * common: A common set of capabilities which include reading configuration files, secrets, etc...
 * hotspot: The definition of a hotspot which is capable of generating reports
-* oracle: The definition of an oracle which is capable of reading messages on a topic and processing them into token payments
-* restapi: A REST API to support the UI (this is dependent on demo running below)
-* hotspots-simulator: TBD, but this will just run a large number of hotspots for simulation purposes
+* oracle-and-api: The definition of an oracle which is capable of reading messages on a topic and processing them into token payments as well as a REST api to support the UI
+* hotspots-simulator: this will just run a large number of hotspots for simulation purposes
 * demo: Automatically starts 3 hotspots, an oracle and the rest api for demonstration purposes 
 
 ## Install and operate the Backend
@@ -54,8 +53,27 @@ cd OracleAndHotspotSimulator
 cd OracleAndHotspotSimulator
 ./gradlew :common:initTopic 
 ./gradlew :common:initTreasury
-./gradlew :common:initToken 
-./gradlew :common:initHotspots 
+./gradlew :common:initToken
+```
+
+to create hotsposts you have two options (not exclusive), you can create three demo hotspots, or a collection of hotspots for scale testing which won't show up in the demo.
+
+to initialise the list of demo hotspots
+
+```shell
+./gradlew :common:initDemoHotspots
+```
+
+to initialise the test list of hotspots (default to 10 new hotspots)
+
+```shell
+./gradlew :common:initHotspots
+```
+
+to add to the list, where 20 is the additional number to create, if empty, the list will be reset
+
+```shell
+./gradlew :common:initHotspots --args="20"
 ```
 
 ## Running the demo
@@ -64,7 +82,21 @@ The demo sets up 3 hotspots, one oracle and the rest api
 
 ```shell
 cd OracleAndHotspotSimulator
-./gradlew :demo:run
+./gradlew :demo:runDemo
+```
+
+## Running a large simulation
+
+The demo sets up as many hotspots as defined in the `config.yaml`, one oracle and the rest api
+
+```shell
+cd OracleAndHotspotSimulator
+# start the oracle
+./gradlew :oracle:runOracle
+# ensure the oracle is running
+
+# start the hotspots simulator
+./gradlew :simulator:runSimulator
 ```
 
 ## Install and operate the Front end

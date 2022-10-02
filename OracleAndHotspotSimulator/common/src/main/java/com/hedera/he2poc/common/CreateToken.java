@@ -12,7 +12,7 @@ public class CreateToken {
     private final Client client = HederaClient.clientFromEnv();
 
     public CreateToken() throws IOException, ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        YamlConfigManager yamlConfigManager = new YamlConfigManager();
+        YamlConfigManager yamlConfigManager = new YamlConfigManager(true);
 
         PrivateKey treasuryAccountKey = PrivateKey.fromString(yamlConfigManager.getTreasuryAccountKey());
         AccountId treasuryAccountId = AccountId.fromString(yamlConfigManager.getTreasuryAccount());

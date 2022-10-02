@@ -1,22 +1,16 @@
-package com.hedera.he2poc.demo;
+package com.hedera.he2poc.oracle;
 
 import com.hedera.he2poc.oracle.api.ApiVerticle;
 import com.hedera.he2poc.common.balancechecker.BalanceChecker;
-import com.hedera.hashgraph.sdk.*;
-import com.hedera.he2poc.hotspot.Hotspots;
-import com.hedera.he2poc.oracle.HCSOracle;
 import com.hedera.he2poc.common.Secrets;
 import com.hedera.he2poc.common.yamlconfig.YamlConfigManager;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
-
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
-import java.util.concurrent.TimeoutException;
 
 @Log4j2
 public class App {
@@ -29,19 +23,14 @@ public class App {
 
     public void start() throws Exception {
 
-        Boolean demo = true;
+        Boolean demo = false;
 
         YamlConfigManager yamlConfigManager = new YamlConfigManager(demo);
         Secrets secrets = new Secrets();
-        if (yamlConfigManager.getHotspots().isEmpty()) {
-            log.error("No demo hotspot details found in config.yaml");
-            return;
-        }
         if (yamlConfigManager.getTopicId().isEmpty()) {
             log.error("No topic configuration found in config.yaml");
             return;
         }
-        Hotspots hotspots = new Hotspots(demo);
         HCSOracle hcsOracle = new HCSOracle(yamlConfigManager, secrets.network(), demo);
 
         // hotspots broadcast themselves on the network when added,
@@ -49,19 +38,7 @@ public class App {
         Thread oracleThread = new Thread(hcsOracle);
         oracleThread.start();
 
-        startBalanceChecker(yamlConfigManager, secrets, demo);
-        startHotspots(hotspots);
-
-        startApi(yamlConfigManager, hotspots, hcsOracle, demo);
-    }
-
-    private void startHotspots(Hotspots hotspots) throws FileNotFoundException, InterruptedException, PrecheckStatusException, TimeoutException {
-        hotspots.startHotspot(1);
-        // random delay between 1 and 3 seconds
-        Random rand = new Random();
-        int upperbound = 3;
-        int delay = rand.nextInt(upperbound) + 1;
-        Thread.sleep(delay * 1000);
+        startApi(yamlConfigManager, hcsOracle, demo);
     }
 
     private void startBalanceChecker(YamlConfigManager yamlConfigManager, Secrets secrets, boolean demo) throws FileNotFoundException {
@@ -69,7 +46,7 @@ public class App {
         Thread balanceCheckerThread = new Thread(balanceChecker);
         balanceCheckerThread.start();
     }
-    private void startApi(YamlConfigManager yamlConfigManager, Hotspots hotspots, HCSOracle hcsOracle, boolean demo) throws Exception {
+    private void startApi(YamlConfigManager yamlConfigManager, HCSOracle hcsOracle, boolean demo) throws Exception {
         log.info("Starting REST api");
         JsonObject config = new JsonObject();
 
@@ -120,7 +97,7 @@ public class App {
 
         log.info("starting client REST api");
         DeploymentOptions options = new DeploymentOptions().setConfig(config).setInstances(yamlConfigManager.getApiVerticleCount());
-        ApiVerticle apiVerticle = new ApiVerticle(hotspots, hcsOracle, demo);
+        ApiVerticle apiVerticle = new ApiVerticle(hcsOracle, demo);
         vertx
                 .deployVerticle(apiVerticle, options)
                 .onFailure(error -> log.error(error.getMessage()));
