@@ -19,7 +19,9 @@ public class CreateAll {
         CreateTreasuryAccount createTreasuryAccount = new CreateTreasuryAccount();
         createTreasuryAccount.create();
         new CreateToken();
+        CreateDemoHotspotAccounts createDemoHotspotAccounts = new CreateDemoHotspotAccounts();
+        createDemoHotspotAccounts.create();
         CreateHotspotAccounts createHotspotAccounts = new CreateHotspotAccounts();
-        createHotspotAccounts.create();
+        createHotspotAccounts.create(new String[0]);
     }
 }
