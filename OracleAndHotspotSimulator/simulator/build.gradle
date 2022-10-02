@@ -8,3 +8,12 @@ dependencies {
     implementation "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
+
+task runSimulator(type: JavaExec) {
+    group = "Execution"
+    description = "Runs the hotspots simulator"
+    classpath = sourceSets.main.runtimeClasspath
+    allJvmArgs = ["-Dlog4j.configurationFile=./log4j2.xml"]
+    main = "com.hedera.he2poc.simulator.App"
+    workingDir = project.rootDir
+}
