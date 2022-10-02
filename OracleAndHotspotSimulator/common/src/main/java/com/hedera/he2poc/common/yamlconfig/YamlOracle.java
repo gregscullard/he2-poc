@@ -1,18 +1,9 @@
 package com.hedera.he2poc.common.yamlconfig;
 
 public class YamlOracle {
-    private boolean enabled = false;
     private int epochSeconds = 10;
     private int minEpochReports = 2;
     private int minWitnessReports = 0;
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     public int getEpochSeconds() {
         return epochSeconds;

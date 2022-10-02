@@ -1,7 +1,8 @@
 !!com.hedera.he2poc.common.yamlconfig.YamlConfig
 api: {apiKey: api_key, apiPort: 8080, apiVerticleCount: 1, httpsCertificate: '', httpsKeyOrPass: ''}
-hotspotsSimulator: true
-hotspotsToStart: 1
-oracle: {enabled: true, epochSeconds: 10, minEpochReports: 2, minWitnessReports: 1}
+demoHotspots: []
+hotspots: []
+oracle: {epochSeconds: 10, minEpochReports: 2, minWitnessReports: 1}
 reportInterval: 10000
 system: {initialHotspotBalance: 2}
+token: {}
