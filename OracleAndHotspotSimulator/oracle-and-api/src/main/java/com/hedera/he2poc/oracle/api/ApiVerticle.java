@@ -68,6 +68,7 @@ public class ApiVerticle extends AbstractVerticle {
 
         // oracles
         PostOraclesHandler postOraclesHandler = new PostOraclesHandler(hcsOracle);
+        GetOraclesTpsHandler getOraclesTpsHandler = new GetOraclesTpsHandler(hcsOracle);
         GetOraclesHandler getOraclesHandler = new GetOraclesHandler(hcsOracle);
         // reports
         GetBeaconReportsHandler getBeaconReportsHandler = new GetBeaconReportsHandler(hcsOracle);
@@ -113,6 +114,9 @@ public class ApiVerticle extends AbstractVerticle {
         router.post("/api/v1/oracles")
                 .handler(authenticationHandler)
                 .handler(postOraclesHandler);
+
+        router.get("/api/v1/oracles/tps")
+                .handler(getOraclesTpsHandler);
 
         router.get("/api/v1/oracles")
                 .handler(getOraclesHandler);
