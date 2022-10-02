@@ -12,48 +12,32 @@ public class YamlConfig {
     private YamlToken token = new YamlToken();
     private YamlApi api = new YamlApi();
     private List<YamlHotspot> hotspots = new ArrayList<>();
-    private int hotspotsToStart = 1;
+
+    private List<YamlHotspot> demoHotspots = new ArrayList<>();
     private int reportInterval = 100;
 
-    private boolean hotspotsSimulator = false;
     private YamlOracle oracle = new YamlOracle();
 
     private YamlSystem system = new YamlSystem();
 
     public YamlSystem getSystem() {
-        return system;
+        return this.system;
     }
 
     public void setSystem(YamlSystem system) {
         this.system = system;
     }
 
-    public boolean isHotspotsSimulator() {
-        return hotspotsSimulator;
-    }
-
-    public void setHotspotsSimulator(boolean hotspotsSimulator) {
-        this.hotspotsSimulator = hotspotsSimulator;
-    }
-
     public YamlOracle getOracle() {
-        return oracle;
+        return this.oracle;
     }
 
     public void setOracle(YamlOracle oracle) {
         this.oracle = oracle;
     }
 
-    public int getHotspotsToStart() {
-        return hotspotsToStart;
-    }
-
-    public void setHotspotsToStart(int hotspotsToStart) {
-        this.hotspotsToStart = hotspotsToStart;
-    }
-
     public int getReportInterval() {
-        return reportInterval;
+        return this.reportInterval;
     }
 
     public void setReportInterval(int reportInterval) {
@@ -66,7 +50,7 @@ public class YamlConfig {
     }
 
     public String getTopicId() {
-        return topicId;
+        return this.topicId;
     }
 
     public void setHotspots(List<YamlHotspot> hotspots) {
@@ -74,11 +58,19 @@ public class YamlConfig {
     }
 
     public List<YamlHotspot> getHotspots() {
-        return hotspots;
+        return this.hotspots;
+    }
+
+    public void setDemoHotspots(List<YamlHotspot> hotspots) {
+        this.demoHotspots = hotspots;
+    }
+
+    public List<YamlHotspot> getDemoHotspots() {
+        return this.demoHotspots;
     }
 
     public YamlApi getApi() {
-        return api;
+        return this.api;
     }
 
     public void setApi(YamlApi api) {
@@ -86,36 +78,18 @@ public class YamlConfig {
     }
 
     public YamlToken getToken() {
-        return token;
+        return this.token;
     }
 
     public void setToken(YamlToken token) {
         this.token = token;
     }
 
-    public List<AccountId> getHotspotAcountIds() {
+    public List<AccountId> getHotspotAcountIds(List<YamlHotspot> hotspots) {
         List<AccountId> accountIds = new ArrayList<>();
         for (int i=0; i<hotspots.size(); i++) {
             accountIds.add(AccountId.fromString(hotspots.get(i).getAccountId()));
         }
         return accountIds;
     }
-
-    public Map<Integer, List<AccountId>> getHotspotPaidAccountsByIdMap() {
-        Map<Integer, List<AccountId>> accountIds = new HashMap<>();
-        for (int i=0; i<hotspots.size(); i++) {
-            List<AccountId> paidAccountIds = new ArrayList<>();
-            List<String> accountsAsStrings = hotspots.get(i).getPaidAccounts();
-            if (accountsAsStrings.size() != 0) {
-                for (String accountId : accountsAsStrings) {
-                    paidAccountIds.add(AccountId.fromString(accountId));
-                }
-            } else {
-                paidAccountIds.add(AccountId.fromString(hotspots.get(i).getAccountId()));
-            }
-            accountIds.put(hotspots.get(i).getId(), paidAccountIds);
-        }
-        return accountIds;
-    }
-
 }
