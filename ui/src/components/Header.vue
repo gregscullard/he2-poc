@@ -7,7 +7,7 @@
       </a>
     </div>
     <div class="container-fluid justify-content-end">
-      <button class="btn btn-outline-success me-2" type="button">todo</button>
+      <TpsChartComponent />
     </div>
   </nav>
   <div class="container">
@@ -18,10 +18,12 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <script>
 import HotspotsComponent from "./HotspotsComponent"
+import TpsChartComponent from "@/components/TpsChartComponent";
 
 export default {
   name: "HeaderComponent",
   components: {
+    TpsChartComponent,
     HotspotsComponent
   },
   data: function() {

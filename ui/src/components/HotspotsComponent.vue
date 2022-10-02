@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="row">
+    <div class="row p-1">
       <div class="col-3">
         <div class="card">
           <div class="card-header">Controls</div>
@@ -157,7 +157,7 @@
             >
               <div class="col p-0">
                 <div class="ms-2 me-auto">
-                  <div class="row p-0">
+                  <div class="row p-1">
                     <div class="col-3 p-0">
                       <img class="img-fluid" :src="nftImage(hotspot.nft)" />
                     </div>
@@ -198,7 +198,7 @@
         <div class="card">
           <BeaconChartComponent :hotspotId="selectedHotspotId" />
         </div>
-        <div class="row">
+        <div class="row pt-2">
           <div class="col">
             <div v-if="selectedHotspot" class="card">
               <h5 class="card-title">{{ selectedHotspot.name }}</h5>
@@ -226,7 +226,8 @@
         </div>
       </div>
     </div>
-    <div class="row" v-if="selectedHotspot">
+
+    <div class="row p-1" v-if="selectedHotspot">
       <div class="col">
         <div class="card">
           <div class="card-header">
@@ -261,7 +262,7 @@
         </div>
       </div>
     </div>
-    <div class="row" v-if="selectedHotspot">
+    <div class="row p-1" v-if="selectedHotspot">
       <div class="col">
         <div class="card">
           <div class="card-header">
