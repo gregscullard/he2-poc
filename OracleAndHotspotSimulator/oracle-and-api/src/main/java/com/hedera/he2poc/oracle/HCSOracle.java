@@ -38,6 +38,15 @@ public class HCSOracle implements Runnable {
     private final Map<Integer, List<AccountId>> hotspotPaidAccountsById = new HashMap<>();
     private final Map<Integer, YamlHotspot> hotspots = new HashMap<>();
     private final boolean demo;
+    private List<Integer> reportsPerSecond = new ArrayList<>();
+    private List<Integer> witnessPerSecond = new ArrayList<>();
+    private List<Integer> paymentsPerSecond = new ArrayList<>();
+
+    private int reportsCount = 0;
+    private int witnessCount = 0;
+    private int paymentsCount = 0;
+
+    private long currentSecond = -1;
 
     // Hedera client
     public HCSOracle(YamlConfigManager yamlConfigManager, String network, boolean demo) {
@@ -55,6 +64,13 @@ public class HCSOracle implements Runnable {
         this.client.setOperator(accountId, privateKey);
         this.client.setMaxNodeAttempts(1);
         this.client.setMaxAttempts(1);
+
+        // initialise x/second counters for one minute
+        for (int i=0; i < 60; i++) {
+            this.reportsPerSecond.add(0);
+            this.witnessPerSecond.add(0);
+            this.paymentsPerSecond.add(0);
+        }
     }
 
     public synchronized void stop() {
@@ -143,6 +159,25 @@ public class HCSOracle implements Runnable {
                 //TODO: calculate epoch properly
                 long timestampSeconds = reportTimestamp.getEpochSecond();
                 long reportEpoch = timestampSeconds / epochSeconds;
+
+                // get current seconds
+                long seconds = timestampSeconds % 60;
+                if (seconds != currentSecond) {
+                    witnessPerSecond.remove(0);
+                    reportsPerSecond.remove(0);
+                    paymentsPerSecond.remove(0);
+
+                    witnessPerSecond.add(witnessCount);
+                    reportsPerSecond.add(reportsCount);
+                    paymentsPerSecond.add(paymentsCount);
+
+                    witnessCount = 0;
+                    reportsCount = 0;
+                    paymentsCount = 0;
+
+                    currentSecond = seconds;
+                }
+
                 if (currentEpoch == 0) {
                     currentEpoch = reportEpoch;
                     currentEpochStart = timestampSeconds;
@@ -151,6 +186,7 @@ public class HCSOracle implements Runnable {
                 if (currentEpoch != reportEpoch) {
                     // new epoch, pay hotspots for their reports
                     for (Map.Entry<Integer, HotspotReports> reports : hotspotReportsMap.entrySet()) {
+                        paymentsCount += 1;
                         HotspotReports reportsToCheck = reports.getValue();
                         HotspotReportsCounter countersToCheck = reportsToCheck.getReportByEpoch(currentEpoch, currentEpochStart);
                         int beaconCount = countersToCheck.getBeaconCount();
@@ -203,6 +239,7 @@ public class HCSOracle implements Runnable {
                         //                    log.debug("witness report {}", reportTimestamp.getEpochSecond());
                         // beacon report
 //                        hotspotId = report.getWitnessReport().getWitnessedId();
+                        witnessCount += 1;
                         hotspotId = jsonReport.getInteger(JsonConstants.WITNESSED_ID);
                         // check if there is a report already for this hotspot
                         if (hotspotReportsMap.containsKey(hotspotId)) {
@@ -216,6 +253,8 @@ public class HCSOracle implements Runnable {
                     } else {
                         // beacon report
                         // check if there is a report already for this hotspot
+                        reportsCount += 1;
+
                         if (hotspotReportsMap.containsKey(hotspotId)) {
                             hotspotReports = hotspotReportsMap.get(hotspotId);
                         }
@@ -278,6 +317,15 @@ public class HCSOracle implements Runnable {
         details.put("currentEpoch", currentEpoch);
         return details;
     }
+
+    public JsonObject getTPS() {
+        JsonObject details = new JsonObject();
+        details.put("witnessPerSecond", witnessPerSecond);
+        details.put("reportsPerSecond", reportsPerSecond);
+        details.put("paymentsPerSecond", paymentsPerSecond);
+        return details;
+    }
+
     public HotspotReports getBeaconHistory(int id) {
         if (hotspotReportsMap.containsKey(id)) {
             return hotspotReportsMap.get(id);
