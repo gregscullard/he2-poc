@@ -83,38 +83,38 @@ public class ApiVerticle extends AbstractVerticle {
                 .failureHandler(ApiVerticle::failureHandler);
 
         if (this.hotspots != null) {
-            router.get("/com/hedera/he2poc/oracle/api/v1/hotspots")
+            router.get("/api/v1/hotspots")
                     .handler(getHotSpotsHandler);
 
-            router.get("/com/hedera/he2poc/oracle/api/v1/hotspots/beaconReports/:id")
+            router.get("/api/v1/hotspots/beaconReports/:id")
                     .handler(getBeaconReportsHandler);
 
-            router.post("/com/hedera/he2poc/oracle/api/v1/hotspots/interval/:interval")
+            router.post("/api/v1/hotspots/interval/:interval")
                     .handler(authenticationHandler)
                     .handler(putHotspotsIntervalHandler);
 
-            router.post("/com/hedera/he2poc/oracle/api/v1/hotspots/:name/:key/:nft")
+            router.post("/api/v1/hotspots/:name/:key/:nft")
                     .handler(authenticationHandler)
                     .handler(postHotspotsHandler);
 
-            router.put("/com/hedera/he2poc/oracle/api/v1/hotspots/:id/interval/:interval")
+            router.put("/api/v1/hotspots/:id/interval/:interval")
                     .handler(authenticationHandler)
                     .handler(putHotspotsIntervalHandler);
 
-            router.put("/com/hedera/he2poc/oracle/api/v1/hotspots/:id/disable")
+            router.put("/api/v1/hotspots/:id/disable")
                     .handler(authenticationHandler)
                     .handler(putHotspotsDisableHandler);
 
-            router.put("/com/hedera/he2poc/oracle/api/v1/hotspots/:id/enable")
+            router.put("/api/v1/hotspots/:id/enable")
                     .handler(authenticationHandler)
                     .handler(putHotspotsEnableHandler);
         }
 
-        router.post("/com/hedera/he2poc/oracle/api/v1/oracles")
+        router.post("/api/v1/oracles")
                 .handler(authenticationHandler)
                 .handler(postOraclesHandler);
 
-        router.get("/com/hedera/he2poc/oracle/api/v1/oracles")
+        router.get("/api/v1/oracles")
                 .handler(getOraclesHandler);
 
         router.get("/").handler(rootHandler);
