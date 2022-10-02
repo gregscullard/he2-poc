@@ -99,6 +99,12 @@ export async function apiSetMinWitness(minWitnessReports) {
         return error;
     });
 }
+
+export async function apiGetTpsReport() {
+    const response = await axios.get(`${serverUrl}/oracles/tps`);
+    return response.data;
+}
+
 export async function apiSetEpochSeconds(epochDuration) {
     axios.post(`${serverUrl}/oracles/?epochDuration=${epochDuration}`,{}, {
         headers: {
