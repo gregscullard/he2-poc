@@ -24,7 +24,7 @@ public class CreateTopic {
         String topicId = receipt.topicId.toString();
         log.info("Created Topic Id {}", topicId);
 
-        YamlConfigManager yamlConfigManager = new YamlConfigManager();
+        YamlConfigManager yamlConfigManager = new YamlConfigManager(false);
         yamlConfigManager.setTopicId(topicId);
         yamlConfigManager.save();
         client.close();

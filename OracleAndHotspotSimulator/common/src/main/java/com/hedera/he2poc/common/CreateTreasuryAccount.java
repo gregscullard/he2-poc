@@ -28,7 +28,7 @@ public class CreateTreasuryAccount {
         String accountId = receipt.accountId.toString();
         log.info("Created Treasury Account Id {}", accountId);
 
-        YamlConfigManager yamlConfigManager = new YamlConfigManager();
+        YamlConfigManager yamlConfigManager = new YamlConfigManager(false);
         yamlConfigManager.setTreasuryAccount(accountId);
         yamlConfigManager.setTreasuryAccountKey(treasuryAccountKey.toString());
         yamlConfigManager.save();
